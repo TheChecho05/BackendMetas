@@ -34,7 +34,6 @@ router.put("/actualizar/:id", [
     check("id", "ID de sala invalido").isMongoId(),
     check("valor", "El valor es requerido").notEmpty(),
     check("valor", "El valor debe ser numérico").isNumeric(),
-    check("valorideal", "El valor ideal es requerido").notEmpty(),
     check("valor", "El valor ideal debe ser numérico").isNumeric(),
     check("texto", "El texto es requerido").notEmpty(),
     check("mes", "El mes es requerido").notEmpty(),
