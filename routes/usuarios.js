@@ -27,6 +27,16 @@ router.post("/agregar", [
     validarCampos,
 ], httpUsuarios.postUsuarios);
 
+router.post("/actualizar/:id", [
+    validarJWT,
+    check("nombre", "El nombre es requerido").notEmpty(),
+    check("nombre", "El nombre debe tener al menos 3 caracteres").isLength({ min: 3 }),
+    check("correo", "El correo es requerido").notEmpty(),
+    check("contrasena", "La contraseña es requerida").notEmpty(),
+    check("rol", "El rol es requerido").notEmpty(),
+    validarCampos,
+], httpUsuarios.putUsuarios);
+
 router.post("/login", [
     check("correo", "El correo es obligatorio").isEmail(),
     check("contrasena", "La contraseña es obligatoria").notEmpty(),
