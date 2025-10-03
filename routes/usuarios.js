@@ -27,7 +27,7 @@ router.post("/agregar", [
     validarCampos,
 ], httpUsuarios.postUsuarios);
 
-router.post("/actualizar/:id", [
+router.put("/actualizar/:id", [
     validarJWT,
     check("nombre", "El nombre es requerido").notEmpty(),
     check("nombre", "El nombre debe tener al menos 3 caracteres").isLength({ min: 3 }),
