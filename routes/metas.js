@@ -43,6 +43,7 @@ router.put("/actualizar/:id", [
 
 router.get("/promedios/:idusuario/:tipo", httpMetas.getPromedios);
 
+router.get("/promediostodos/:idusuario/:tipo", httpMetas.getPromediosTodos);
 
 router.get("/ac/:idusuario/tipo/:tipo/", httpMetas.getAcByUsuario);
 
