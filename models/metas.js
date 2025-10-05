@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const metaSchema=new mongoose.Schema({
     tipo:{type:String,required:true},
-    valor:{type:Number,required:true},
+    valor:{type:Number},
     valorideal:{type:Number},
     texto:{type:String,required:true},
     mes:{type:Number,required:true},
