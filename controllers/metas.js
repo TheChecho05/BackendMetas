@@ -25,6 +25,31 @@ const httpMetas = {
       res.status(500).json({ error: "Error al obtener las metas del usuario" });
     }
   },
+  postMetas: async (req, res) => {
+    try {
+      const { tipo, valor, valorideal, texto, mes, anio, idusuario } = req.body;
+      const meta = new Metas({
+        tipo,
+        valor,
+        valorideal,
+        texto,
+        mes,
+        anio,
+        idusuario,
+      });
+      await meta.save();
+      res.json({ message: "Meta creada satisfactoriamente", meta });
+    } catch (error) {
+      console.log(error);
+      res.status(400).json({ err: "No se pudo crear la meta" });
+    }
+  },
+  putMetas: async (req, res) => {
+    const { id } = req.params;
+    const { ...resto } = req.body;
+    const meta = await Metas.findByIdAndUpdate(id, resto, { new: true });
+    res.json(meta);
+  },
   getAcByUsuario: async (req, res) => {
     try {
       const { idusuario, tipo } = req.params;
@@ -142,31 +167,78 @@ const httpMetas = {
         .json({ error: "Error al calcular promedios con valor ideal" });
     }
   },
-
-  postMetas: async (req, res) => {
+    getCumplimientoAnual: async (req, res) => {
     try {
-      const { tipo, valor, valorideal, texto, mes, anio, idusuario } = req.body;
-      const meta = new Metas({
-        tipo,
-        valor,
-        valorideal,
-        texto,
-        mes,
-        anio,
-        idusuario,
+      const { idusuario } = req.params;
+
+      // tabla de pesos (%)
+      const pesos = {
+        "DPO": 20,
+        "NPS": 15,
+        "OTIF": 15,
+        "HCD": 10,
+        "IRA": 15,
+        "SCO": 15,
+        "ATCT": 10,
+        "WNP": 10,
+        "RUTAS SIF": 20,
+        "SIF INDEX": 15,
+        "ACIS": 15,
+        "LTI": 15,
+        "ON TIME": 20,
+        "ASSET EFFICIENCY": 20,
+        "CUMPLIMIENTO DE CORRECTIVOS": 20,
+        "DISPONIBILIDAD DE FLOTA": 20,
+        "VLC T2": 10,
+        "VLC LS": 10,
+        "HL NO ENTREGADO": 10,
+        "HL NO PLANEADO": 10,
+        "TOTAL PRODUCTIVITY": 10,
+        "ENTREGA RANGO": 10
+      };
+
+      // buscar todas las metas del usuario
+      const metas = await Metas.find({
+        idusuario: new mongoose.Types.ObjectId(idusuario)
       });
-      await meta.save();
-      res.json({ message: "Meta creada satisfactoriamente", meta });
+
+      if (!metas || metas.length === 0) {
+        return res.status(404).json({ message: "No se encontraron metas para este usuario" });
+      }
+
+      // inicializar arreglo con 12 meses en 0
+      let cumplimientoMeses = Array(12).fill(0);
+
+      // procesar metas
+      metas.forEach(meta => {
+        const peso = pesos[meta.tipo] || 0;
+        const cumplida = meta.valor >= meta.valorideal;
+        if (cumplida) {
+          cumplimientoMeses[meta.mes - 1] += peso;
+        }
+      });
+
+      // nombres de meses
+      const nombresMeses = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+      ];
+
+      // armar resultado solo con mes y % total
+      const resultado = cumplimientoMeses.map((valor, i) => ({
+        mes: nombresMeses[i],
+        cumplimiento: `${valor}%`
+      }));
+
+      res.json({
+        idusuario,
+        cumplimientoAnual: resultado
+      });
+
     } catch (error) {
-      console.log(error);
-      res.status(400).json({ err: "No se pudo crear la meta" });
+      console.error(error);
+      res.status(500).json({ error: "Error al calcular el cumplimiento anual" });
     }
-  },
-  putMetas: async (req, res) => {
-    const { id } = req.params;
-    const { ...resto } = req.body;
-    const meta = await Metas.findByIdAndUpdate(id, resto, { new: true });
-    res.json(meta);
   },
 };
 export default httpMetas;

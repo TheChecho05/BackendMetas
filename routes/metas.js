@@ -19,8 +19,8 @@ router.get("/obt/:idusuario",[
 router.post("/agregar", [
     validarJWT,
     check("tipo", "El tipo es requerido").notEmpty(),
-    check("valor", "El valor es requerido").notEmpty(),
-    check("valor", "El valor debe ser numérico").isNumeric(),
+    // check("valor", "El valor es requerido").notEmpty(),
+    // check("valor", "El valor debe ser numérico").isNumeric(),
     check("texto", "El tipo es requerido").notEmpty(),
     check("mes", "El mes es requerido").notEmpty(),
     check("anio", "El año es requerido").notEmpty(),
@@ -32,9 +32,9 @@ router.post("/agregar", [
 router.put("/actualizar/:id", [
   validarJWT,
     check("id", "ID de sala invalido").isMongoId(),
-    check("valor", "El valor es requerido").notEmpty(),
-    check("valor", "El valor debe ser numérico").isNumeric(),
-    check("valor", "El valor ideal debe ser numérico").isNumeric(),
+    // check("valor", "El valor es requerido").notEmpty(),
+    // check("valor", "El valor debe ser numérico").isNumeric(),
+    // check("valor", "El valor ideal debe ser numérico").isNumeric(),
     check("texto", "El texto es requerido").notEmpty(),
     check("mes", "El mes es requerido").notEmpty(),
     check("anio", "El año es requerido").notEmpty(),
@@ -46,5 +46,7 @@ router.get("/promedios/:idusuario/:tipo", httpMetas.getPromedios);
 router.get("/promediostodos/:idusuario/:tipo", httpMetas.getPromediosTodos);
 
 router.get("/ac/:idusuario/tipo/:tipo/", httpMetas.getAcByUsuario);
+
+router.get("/cumplimiento/:idusuario", httpMetas.getCumplimientoAnual);
 
 export default router;
