@@ -330,7 +330,7 @@ const httpMetas = {
 
     const resultado = cumplimientoMeses.map((valor, i) => ({
       mes: nombresMeses[i],
-      cumplimiento: `${valor}%`
+      cumplimiento: `${valor}`
     }));
 
     res.json({
