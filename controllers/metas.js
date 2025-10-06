@@ -290,7 +290,7 @@ const httpMetas = {
     res.json({
       idusuario,
       cumplimientoAnual: resultado,
-      YTD: `${YTD}%`
+      YTD: `${YTD}`
     });
 
   } catch (error) {
