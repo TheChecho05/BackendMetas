@@ -194,10 +194,14 @@ const httpMetas = {
       "HL NO PLANEADO": 10,
       "TOTAL PRODUCTIVITY": 10,
       "ENTREGA RANGO": 10,
+
+      // nuevas
       "Asset Efficiency - MAZ": 20,
       "Service Level in full": 10,
       "TSO MAZ": 10,
       "VLC TOTAL (P&P)": 20,
+
+      // ⚠️ las 5 metas de grupo (no usar aquí sus pesos individuales)
       "Modelos de Distribucion": 0,
       "SCL": 0,
       "TP": 0,
@@ -214,6 +218,9 @@ const httpMetas = {
     }
 
     let cumplimientoMeses = Array(12).fill(0);
+    let detallePorMes = Array.from({ length: 12 }, () => []);
+
+    // 🔹 guardamos por mes las 5 metas especiales
     let grupoEspecial = Array.from({ length: 12 }, () => []);
 
     metas.forEach(meta => {
@@ -299,6 +306,8 @@ const httpMetas = {
         case "VLC TOTAL (P&P)":
           cumplida = meta.valorideal <= meta.valor;
           break;
+
+        // 🔹 grupo especial de 5 metas
         case "Modelos de Distribucion":
         case "SCL":
         case "TP":
@@ -307,19 +316,29 @@ const httpMetas = {
           cumplida = meta.valorideal > meta.valor;
           grupoEspecial[meta.mes - 1].push(cumplida);
           break;
+
         default:
           cumplida = meta.valor >= meta.valorideal;
       }
 
+      // solo sumamos si no es de las 5 especiales
       if (peso > 0 && cumplida) {
         cumplimientoMeses[meta.mes - 1] += peso;
       }
+
+      detallePorMes[meta.mes - 1].push({
+        tipo: meta.tipo,
+        valor: meta.valor,
+        valorideal: meta.valorideal,
+        cumplida: cumplida ? "Sí" : "No"
+      });
     });
 
+    // 🔹 ahora validamos el grupo de 5 metas
     grupoEspecial.forEach((cumplidas, index) => {
       const totalCumplidas = cumplidas.filter(c => c).length;
       if (totalCumplidas >= 4) {
-        cumplimientoMeses[index] += 20;
+        cumplimientoMeses[index] += 20; // suma global
       }
     });
 
@@ -330,7 +349,8 @@ const httpMetas = {
 
     const resultado = cumplimientoMeses.map((valor, i) => ({
       mes: nombresMeses[i],
-      cumplimiento: `${valor}%`
+      cumplimiento: `${valor}%`,
+      metas: detallePorMes[i]
     }));
 
     res.json({
@@ -343,6 +363,8 @@ const httpMetas = {
     res.status(500).json({ error: "Error al calcular el cumplimiento anual" });
   }
 },
+
+
 
 
 };
