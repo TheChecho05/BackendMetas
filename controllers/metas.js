@@ -298,7 +298,26 @@ const httpMetas = {
     res.status(500).json({ error: "Error al calcular el cumplimiento anual" });
   }
 },
+deleteMetas: async (req, res) => {
+  try {
+    const { id } = req.params;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ message: "ID inválido" });
+    }
+
+    const meta = await Metas.findByIdAndDelete(id);
+
+    if (!meta) {
+      return res.status(404).json({ message: "Meta no encontrada" });
+    }
+
+    res.json({ message: "Meta eliminada correctamente", meta });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Error al eliminar la meta" });
+  }
+},
 
 
 };

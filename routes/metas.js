@@ -49,4 +49,7 @@ router.get("/ac/:idusuario/tipo/:tipo/", httpMetas.getAcByUsuario);
 
 router.get("/cumplimiento/:idusuario", httpMetas.getCumplimientoAnual);
 
+router.delete("/borrar/:id", httpMetas.deleteMetas);
+
+
 export default router;
