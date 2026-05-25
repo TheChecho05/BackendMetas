@@ -167,6 +167,67 @@ const httpMetas = {
         .json({ error: "Error al calcular promedios con valor ideal" });
     }
   },
+  getPromediosTodosAnio: async (req, res) => {
+  try {
+    const { idusuario, tipo, anio } = req.params;
+
+    const metas = await Metas.find({
+      idusuario: new mongoose.Types.ObjectId(idusuario),
+      tipo,
+      anio: Number(anio),
+    }).select("valor valorideal mes anio");
+
+    if (!metas || metas.length === 0) {
+      return res.status(404).json({
+        message: "No hay metas para este usuario en el año seleccionado",
+      });
+    }
+
+    const valoresPorMes = Array(12).fill(0);
+    const valoresIdealPorMes = Array(12).fill(0);
+
+    const mesesConValor = [];
+    const mesesConValorIdeal = [];
+
+    metas.forEach((m) => {
+      const indice = m.mes - 1;
+
+      valoresPorMes[indice] = m.valor;
+
+      if (m.valorideal !== undefined && m.valorideal !== null) {
+        valoresIdealPorMes[indice] = m.valorideal;
+        mesesConValorIdeal.push(m.valorideal);
+      }
+
+      mesesConValor.push(m.valor);
+    });
+
+    const promedio =
+      mesesConValor.reduce((a, b) => a + b, 0) /
+      mesesConValor.length;
+
+    const promedioIdeal =
+      mesesConValorIdeal.length > 0
+        ? mesesConValorIdeal.reduce((a, b) => a + b, 0) /
+          mesesConValorIdeal.length
+        : 0;
+
+    res.json({
+      tipo,
+      anio,
+      valores: valoresPorMes,
+      promedio: Math.round(promedio * 100) / 100,
+      valoresIdeal: valoresIdealPorMes,
+      promedioIdeal: Math.round(promedioIdeal * 100) / 100,
+    });
+
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      error: "Error al calcular promedios por año",
+    });
+  }
+},
   getCumplimientoAnual: async (req, res) => {
   try {
     const { idusuario } = req.params;
