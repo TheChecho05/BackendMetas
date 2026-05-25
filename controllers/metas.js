@@ -359,6 +359,256 @@ const httpMetas = {
     res.status(500).json({ error: "Error al calcular el cumplimiento anual" });
   }
 },
+getCumplimientoAnio: async (req, res) => {
+  try {
+
+    const { idusuario, anio } = req.params;
+
+    const pesos = {
+      "DPO": 20,
+      "NPS": 15,
+      "OTIF": 15,
+      "HCD": 10,
+      "IRA": 15,
+      "SCO": 15,
+      "ATCT": 10,
+      "WNP": 10,
+      "RUTAS SIF": 20,
+      "SIF INDEX": 15,
+      "ACIS": 15,
+      "LTI": 15,
+      "ON TIME": 20,
+      "ASSET EFFICIENCY": 20,
+      "CUMPLIMIENTO DE CORRECTIVOS": 20,
+      "DISPONIBILIDAD DE FLOTA": 20,
+      "VLC T2": 10,
+      "VLC LS": 10,
+      "HL NO ENTREGADO": 10,
+      "HL NO PLANEADO": 10,
+      "TOTAL PRODUCTIVITY": 10,
+      "ENTREGA RANGO": 10,
+      "Asset Efficiency - MAZ": 20,
+      "Service Level in full": 10,
+      "TSO MAZ": 10,
+      "VLC TOTAL (P&P)": 20,
+      "Modelos de Distribucion": 0,
+      "SCL": 0,
+      "TP": 0,
+      "NPS DB": 0,
+      "CONTROL POLICIES": 0
+    };
+
+    const metas = await Metas.find({
+      idusuario: new mongoose.Types.ObjectId(idusuario),
+      anio: Number(anio)
+    });
+
+    if (!metas || metas.length === 0) {
+      return res.status(404).json({
+        message: "No se encontraron metas para este usuario en ese año"
+      });
+    }
+
+    let cumplimientoMeses = Array(12).fill(0);
+
+    let grupoEspecial = Array.from(
+      { length: 12 },
+      () => []
+    );
+
+    metas.forEach(meta => {
+
+      const peso = pesos[meta.tipo] || 0;
+
+      let cumplida = false;
+
+      switch (meta.tipo) {
+
+        case "DPO":
+          cumplida = meta.valor >= meta.valorideal;
+          break;
+
+        case "NPS":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        case "OTIF":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        case "HCD":
+          cumplida = meta.valorideal > meta.valor;
+          break;
+
+        case "VLC T2":
+          cumplida = meta.valorideal < meta.valor;
+          break;
+
+        case "HL NO ENTREGADO":
+          cumplida = meta.valorideal < meta.valor;
+          break;
+
+        case "TOTAL PRODUCTIVITY":
+          cumplida = meta.valor < meta.valorideal;
+          break;
+
+        case "ENTREGA RANGO":
+          cumplida = meta.valorideal > meta.valor;
+          break;
+
+        case "VLC LS":
+          cumplida = meta.valor >= meta.valorideal;
+          break;
+
+        case "IRA":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        case "SCO":
+          cumplida = meta.valorideal > meta.valor;
+          break;
+
+        case "ATCT":
+          cumplida = meta.valorideal < meta.valor;
+          break;
+
+        case "WNP":
+          cumplida = meta.valorideal > meta.valor;
+          break;
+
+        case "HL NO PLANEADO":
+          cumplida = meta.valorideal > meta.valor;
+          break;
+
+        case "RUTAS SIF":
+          cumplida = meta.valor >= meta.valorideal;
+          break;
+
+        case "SIF INDEX":
+          cumplida = meta.valorideal >= meta.valor;
+          break;
+
+        case "ACIS":
+          cumplida = meta.valorideal >= meta.valor;
+          break;
+
+        case "LTI":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        case "ON TIME":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        case "ASSET EFFICIENCY":
+          cumplida = meta.valor >= meta.valorideal;
+          break;
+
+        case "CUMPLIMIENTO DE CORRECTIVOS":
+          cumplida = meta.valorideal > meta.valor;
+          break;
+
+        case "DISPONIBILIDAD DE FLOTA":
+          cumplida = meta.valorideal > meta.valor;
+          break;
+
+        case "Asset Efficiency - MAZ":
+          cumplida = meta.valorideal >= meta.valor;
+          break;
+
+        case "Service Level in full":
+          cumplida = meta.valorideal <= meta.valor;
+          break;
+
+        case "TSO MAZ":
+          cumplida = meta.valorideal <= meta.valor;
+          break;
+
+        case "VLC TOTAL (P&P)":
+          cumplida = meta.valorideal <= meta.valor;
+          break;
+
+        case "Modelos de Distribucion":
+        case "SCL":
+        case "TP":
+        case "NPS DB":
+        case "CONTROL POLICIES":
+
+          cumplida = meta.valorideal > meta.valor;
+
+          grupoEspecial[meta.mes - 1].push(cumplida);
+
+          break;
+
+        default:
+          cumplida = meta.valor >= meta.valorideal;
+      }
+
+      if (peso > 0 && cumplida) {
+        cumplimientoMeses[meta.mes - 1] += peso;
+      }
+
+    });
+
+    grupoEspecial.forEach((cumplidas, index) => {
+
+      const totalCumplidas =
+        cumplidas.filter(c => c).length;
+
+      if (totalCumplidas >= 4) {
+        cumplimientoMeses[index] += 20;
+      }
+
+    });
+
+    const nombresMeses = [
+      "Enero",
+      "Febrero",
+      "Marzo",
+      "Abril",
+      "Mayo",
+      "Junio",
+      "Julio",
+      "Agosto",
+      "Septiembre",
+      "Octubre",
+      "Noviembre",
+      "Diciembre"
+    ];
+
+    const resultado = cumplimientoMeses.map((valor, i) => ({
+      mes: nombresMeses[i],
+      cumplimiento: `${valor}`
+    }));
+
+    const mesesConDatos =
+      cumplimientoMeses.filter(v => v > 0);
+
+    const YTD =
+      mesesConDatos.length > 0
+        ? (
+            mesesConDatos.reduce((a, b) => a + b, 0)
+            / mesesConDatos.length
+          ).toFixed(2)
+        : 0;
+
+    res.json({
+      idusuario,
+      anio,
+      cumplimientoAnual: resultado,
+      YTD: `${YTD}`
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: "Error al calcular el cumplimiento anual"
+    });
+
+  }
+},
 deleteMetas: async (req, res) => {
   try {
     const { id } = req.params;
