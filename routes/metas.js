@@ -45,7 +45,7 @@ router.get("/promedios/:idusuario/:tipo", httpMetas.getPromedios);
 
 router.get("/promediostodos/:idusuario/:tipo", httpMetas.getPromediosTodos);
 
-router.get("/promediosTodos/:idusuario/:tipo/:anio",httpMetas.getPromediosTodosAnio);
+router.get("/promediostodosanio/:idusuario/:tipo/:anio",httpMetas.getPromediosTodosAnio);
 
 router.get("/ac/:idusuario/tipo/:tipo/", httpMetas.getAcByUsuario);
 
