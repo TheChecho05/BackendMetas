@@ -26,30 +26,115 @@ const httpMetas = {
     }
   },
   postMetas: async (req, res) => {
-    try {
-      const { tipo, valor, valorideal, texto, mes, anio, idusuario } = req.body;
-      const meta = new Metas({
+  try {
+
+    const {
+      tipo,
+      valor,
+      valorideal,
+      texto,
+      mes,
+      anio,
+      idusuario
+    } = req.body;
+
+    // Validar duplicados
+    const existeMeta = await Metas.findOne({
+      tipo,
+      mes,
+      anio,
+      idusuario
+    });
+
+    if (existeMeta) {
+      return res.status(400).json({
+        message:
+          "Ya existe una meta con ese tipo, mes y año para este usuario"
+      });
+    }
+
+    const meta = new Metas({
+      tipo,
+      valor,
+      valorideal,
+      texto,
+      mes,
+      anio,
+      idusuario,
+    });
+
+    await meta.save();
+
+    res.json({
+      message: "Meta creada satisfactoriamente",
+      meta
+    });
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(400).json({
+      err: "No se pudo crear la meta"
+    });
+
+  }
+},
+  putMetas: async (req, res) => {
+
+  try {
+
+    const { id } = req.params;
+
+    const {
+      tipo,
+      mes,
+      anio,
+      idusuario,
+      ...resto
+    } = req.body;
+
+    // Buscar si ya existe otra meta igual
+    const existeMeta = await Metas.findOne({
+      tipo,
+      mes,
+      anio,
+      idusuario,
+      _id: { $ne: id } // excluir la actual
+    });
+
+    if (existeMeta) {
+      return res.status(400).json({
+        message:
+          "Ya existe una meta con ese tipo, mes y año para este usuario"
+      });
+    }
+
+    const meta = await Metas.findByIdAndUpdate(
+      id,
+      {
         tipo,
-        valor,
-        valorideal,
-        texto,
         mes,
         anio,
         idusuario,
-      });
-      await meta.save();
-      res.json({ message: "Meta creada satisfactoriamente", meta });
-    } catch (error) {
-      console.log(error);
-      res.status(400).json({ err: "No se pudo crear la meta" });
-    }
-  },
-  putMetas: async (req, res) => {
-    const { id } = req.params;
-    const { ...resto } = req.body;
-    const meta = await Metas.findByIdAndUpdate(id, resto, { new: true });
+        ...resto
+      },
+      { new: true }
+    );
+
     res.json(meta);
-  },
+
+  } catch (error) {
+
+    console.log(error);
+
+    res.status(400).json({
+      err: "No se pudo actualizar la meta"
+    });
+
+  }
+
+},
   getAcByUsuario: async (req, res) => {
     try {
       const { idusuario, tipo } = req.params;
