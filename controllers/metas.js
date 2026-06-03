@@ -49,7 +49,7 @@ const httpMetas = {
     if (existeMeta) {
       return res.status(400).json({
         message:
-          "Ya existe una meta con ese tipo, mes y año para este usuario"
+          "Ya existe una meta, Con este mes y año"
       });
     }
 
