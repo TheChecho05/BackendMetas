@@ -59,6 +59,8 @@ router.get("/cumplimiento/:idusuario", httpMetas.getCumplimientoAnual);
 
 router.get("/cumplimientoanio/:idusuario/:anio", httpMetas.getCumplimientoAnio);
 
+router.get("/cumplimientoanio2026/:idusuario/:anio", httpMetas.getCumplimiento2026);
+
 router.delete("/borrar/:id", httpMetas.deleteMetas);
 
 export default router;

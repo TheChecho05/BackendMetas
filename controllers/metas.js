@@ -694,6 +694,226 @@ getCumplimientoAnio: async (req, res) => {
 
   }
 },
+getCumplimiento2026: async (req, res) => {
+  try {
+
+    const { idusuario, anio } = req.params;
+
+    const pesos = {
+      "ACIS": 15,
+      "ASSET EFFICIENCY": 15,
+      "ASSET UTILIZATION": 15,
+      "ATCT 1": 10,
+      "ATCT 2": 5,
+      "CO Logistic T2 Regional Dashboard": 25,
+      "DELIVERY EXPERIENCE": 10,
+      "DISPONIBILIDAD DE FLOTA": 20,
+      "DPO": 20,
+      "HL NO ENTREGADO": 5,
+      "HL NO PLANEADO": 10,
+      "LTI's": 15,
+      "MANTENIMIENTOS CORRECTIVOS": 10,
+      "NPS 1": 15,
+      "NPS 2": 5,
+      "ON TIME": 20,
+      "OTIF": 15,
+      "ROUTE TO MARKET": 5,
+      "RTM": 5,
+      "RUTAS SIF": 20,
+      "SCO": 15,
+      "Service Level in full": 10,
+      "SIF INDEX": 15,
+      "SL Acido (KA)": 5,
+      "TOTAL PRODUCTIVITY": 10,
+      "Total losses (Productividad)": 15,
+      "TRI": 5,
+      "TSO": 10,
+      "TSO MAZ": 10,
+      "VLC LS": 20,
+      "VLC T2": 20,
+      "VLC TOTAL (P&P)": 20,
+      "WNP": 5
+    };
+
+    const metas = await Metas.find({
+      idusuario: new mongoose.Types.ObjectId(idusuario),
+      anio: Number(anio)
+    });
+
+    if (!metas || metas.length === 0) {
+      return res.status(404).json({
+        message: "No se encontraron metas para este usuario en ese año"
+      });
+    }
+
+    let cumplimientoMeses = Array(12).fill(0);
+
+    metas.forEach(meta => {
+
+      const peso = pesos[meta.tipo] || 0;
+
+      let cumplida = false;
+
+      switch (meta.tipo) {
+
+        // ===== Conservan lógica 2025 =====
+
+        case "DPO":
+          cumplida = meta.valor >= meta.valorideal;
+          break;
+
+        case "NPS 1":
+        case "NPS 2":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        case "OTIF":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        case "SCO":
+          cumplida = meta.valorideal > meta.valor;
+          break;
+
+        case "ATCT 1":
+        case "ATCT 2":
+          cumplida = meta.valorideal < meta.valor;
+          break;
+
+        case "WNP":
+          cumplida = meta.valorideal > meta.valor;
+          break;
+
+        case "HL NO PLANEADO":
+          cumplida = meta.valorideal > meta.valor;
+          break;
+
+        case "RUTAS SIF":
+          cumplida = meta.valor >= meta.valorideal;
+          break;
+
+        case "SIF INDEX":
+          cumplida = meta.valorideal >= meta.valor;
+          break;
+
+        case "ACIS":
+          cumplida = meta.valorideal >= meta.valor;
+          break;
+
+        case "ON TIME":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        case "DISPONIBILIDAD DE FLOTA":
+          cumplida = meta.valorideal > meta.valor;
+          break;
+
+        case "Service Level in full":
+          cumplida = meta.valorideal <= meta.valor;
+          break;
+
+        case "TSO MAZ":
+          cumplida = meta.valorideal <= meta.valor;
+          break;
+
+        case "VLC TOTAL (P&P)":
+          cumplida = meta.valorideal <= meta.valor;
+          break;
+
+        case "VLC LS":
+          cumplida = meta.valor >= meta.valorideal;
+          break;
+
+        // ===== Metas que ya existían =====
+
+        case "HL NO ENTREGADO":
+          cumplida = meta.valorideal < meta.valor;
+          break;
+
+        case "TOTAL PRODUCTIVITY":
+          cumplida = meta.valor < meta.valorideal;
+          break;
+
+        case "VLC T2":
+          cumplida = meta.valorideal < meta.valor;
+          break;
+
+        // ===== Nuevas metas 2026 =====
+        // Regla acordada: valor >= valorideal
+
+        case "ASSET EFFICIENCY":
+        case "ASSET UTILIZATION":
+        case "CO Logistic T2 Regional Dashboard":
+        case "DELIVERY EXPERIENCE":
+        case "LTI's":
+        case "MANTENIMIENTOS CORRECTIVOS":
+        case "ROUTE TO MARKET":
+        case "RTM":
+        case "SL Acido (KA)":
+        case "Total losses (Productividad)":
+        case "TRI":
+        case "TSO":
+          cumplida = meta.valor >= meta.valorideal;
+          break;
+
+        default:
+          cumplida = meta.valor >= meta.valorideal;
+      }
+
+      if (peso > 0 && cumplida) {
+        cumplimientoMeses[meta.mes - 1] += peso;
+      }
+
+    });
+
+    const nombresMeses = [
+      "Enero",
+      "Febrero",
+      "Marzo",
+      "Abril",
+      "Mayo",
+      "Junio",
+      "Julio",
+      "Agosto",
+      "Septiembre",
+      "Octubre",
+      "Noviembre",
+      "Diciembre"
+    ];
+
+    const resultado = cumplimientoMeses.map((valor, i) => ({
+      mes: nombresMeses[i],
+      cumplimiento: `${valor}`
+    }));
+
+    const mesesConDatos =
+      cumplimientoMeses.filter(v => v > 0);
+
+    const YTD =
+      mesesConDatos.length > 0
+        ? (
+            mesesConDatos.reduce((a, b) => a + b, 0)
+            / mesesConDatos.length
+          ).toFixed(2)
+        : 0;
+
+    res.json({
+      idusuario,
+      anio,
+      cumplimientoAnual: resultado,
+      YTD: `${YTD}`
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    res.status(500).json({
+      error: "Error al calcular el cumplimiento anual 2026"
+    });
+
+  }
+},
 deleteMetas: async (req, res) => {
   try {
     const { id } = req.params;
