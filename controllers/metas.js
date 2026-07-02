@@ -756,103 +756,224 @@ getCumplimiento2026: async (req, res) => {
 
       switch (meta.tipo) {
 
-        // ===== Conservan lógica 2025 =====
-
+        // ===========================
+        // DPO
+        // ===========================
         case "DPO":
           cumplida = meta.valor >= meta.valorideal;
           break;
 
+        // ===========================
+        // NPS
+        // ===========================
         case "NPS 1":
         case "NPS 2":
           cumplida = meta.valor <= meta.valorideal;
           break;
 
+        // ===========================
+        // OTIF
+        // ===========================
         case "OTIF":
           cumplida = meta.valor <= meta.valorideal;
           break;
 
+        // ===========================
+        // SCO
+        // ===========================
         case "SCO":
           cumplida = meta.valorideal > meta.valor;
           break;
 
+        // ===========================
+        // ATCT
+        // ===========================
         case "ATCT 1":
         case "ATCT 2":
-          cumplida = meta.valorideal < meta.valor;
+          cumplida = meta.valor >= meta.valorideal;
           break;
 
+        // ===========================
+        // WNP
+        // ===========================
         case "WNP":
           cumplida = meta.valorideal > meta.valor;
           break;
 
+        // ===========================
+        // HL NO PLANEADO
+        // ===========================
         case "HL NO PLANEADO":
           cumplida = meta.valorideal > meta.valor;
           break;
 
+        // ===========================
+        // RUTAS SIF
+        // ===========================
         case "RUTAS SIF":
           cumplida = meta.valor >= meta.valorideal;
           break;
 
+        // ===========================
+        // SIF INDEX
+        // ===========================
         case "SIF INDEX":
           cumplida = meta.valorideal >= meta.valor;
           break;
 
+        // ===========================
+        // ACIS
+        // ===========================
         case "ACIS":
           cumplida = meta.valorideal >= meta.valor;
           break;
 
+        // ===========================
+        // ON TIME
+        // ===========================
         case "ON TIME":
           cumplida = meta.valor <= meta.valorideal;
           break;
 
+        // ===========================
+        // ASSET EFFICIENCY
+        // ===========================
+        case "ASSET EFFICIENCY":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        // ===========================
+        // ASSET UTILIZATION
+        // ===========================
+        case "ASSET UTILIZATION":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        // ===========================
+        // DISPONIBILIDAD DE FLOTA
+        // ===========================
         case "DISPONIBILIDAD DE FLOTA":
           cumplida = meta.valorideal > meta.valor;
           break;
 
+        // ===========================
+        // MANTENIMIENTOS CORRECTIVOS
+        // ===========================
+        case "MANTENIMIENTOS CORRECTIVOS":
+          cumplida = meta.valor >= meta.valorideal;
+          break;
+
+        // ===========================
+        // SERVICE LEVEL IN FULL
+        // ===========================
         case "Service Level in full":
-          cumplida = meta.valorideal <= meta.valor;
+          cumplida = meta.valor >= meta.valorideal;
           break;
 
+        // ===========================
+        // TSO MAZ
+        // ===========================
         case "TSO MAZ":
-          cumplida = meta.valorideal <= meta.valor;
+          cumplida = meta.valor >= meta.valorideal;
           break;
 
+        // ===========================
+        // VLC TOTAL
+        // ===========================
         case "VLC TOTAL (P&P)":
-          cumplida = meta.valorideal <= meta.valor;
+          cumplida = meta.valor >= meta.valorideal;
           break;
 
+        // ===========================
+        // VLC LS
+        // ===========================
         case "VLC LS":
           cumplida = meta.valor >= meta.valorideal;
           break;
 
-        // ===== Metas que ya existían =====
-
+        // ===========================
+        // HL NO ENTREGADO
+        // ===========================
         case "HL NO ENTREGADO":
-          cumplida = meta.valorideal < meta.valor;
+          cumplida = meta.valor >= meta.valorideal;
           break;
 
+        // ===========================
+        // TOTAL PRODUCTIVITY
+        // ===========================
         case "TOTAL PRODUCTIVITY":
-          cumplida = meta.valor < meta.valorideal;
+          cumplida = meta.valor <= meta.valorideal;
           break;
 
+        // ===========================
+        // VLC T2
+        // ===========================
         case "VLC T2":
-          cumplida = meta.valorideal < meta.valor;
+          cumplida = meta.valor >= meta.valorideal;
           break;
 
-        // ===== Nuevas metas 2026 =====
-        // Regla acordada: valor >= valorideal
-
-        case "ASSET EFFICIENCY":
-        case "ASSET UTILIZATION":
-        case "CO Logistic T2 Regional Dashboard":
+        // ===========================
+        // DELIVERY EXPERIENCE
+        // ===========================
         case "DELIVERY EXPERIENCE":
-        case "LTI's":
-        case "MANTENIMIENTOS CORRECTIVOS":
+          cumplida = meta.valor >= meta.valorideal;
+          break;
+
+        // ===========================
+        // ROUTE TO MARKET
+        // ===========================
         case "ROUTE TO MARKET":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        // ===========================
+        // RTM
+        // ===========================
         case "RTM":
-        case "SL Acido (KA)":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        // ===========================
+        // LTI
+        // ===========================
+        case "LTI's":
+          cumplida = meta.valor >= meta.valorideal;
+          break;
+
+        // ===========================
+        // TOTAL LOSSES
+        // ===========================
         case "Total losses (Productividad)":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        // ===========================
+        // TRI
+        // (Se maneja con datos 1/1 o 0/0)
+        // ===========================
         case "TRI":
+          cumplida = meta.valor >= meta.valorideal;
+          break;
+
+        // ===========================
+        // TSO
+        // ===========================
         case "TSO":
+          cumplida = meta.valor <= meta.valorideal;
+          break;
+
+        // ===========================
+        // SL ACIDO
+        // ===========================
+        case "SL Acido (KA)":
+          cumplida = meta.valor >= meta.valorideal;
+          break;
+
+        // ===========================
+        // CO LOGISTIC DASHBOARD
+        // (No debería llegar porque se evalúan las 5 metas individuales)
+        // ===========================
+        case "CO Logistic T2 Regional Dashboard":
           cumplida = meta.valor >= meta.valorideal;
           break;
 
@@ -886,14 +1007,13 @@ getCumplimiento2026: async (req, res) => {
       cumplimiento: `${valor}`
     }));
 
-    const mesesConDatos =
-      cumplimientoMeses.filter(v => v > 0);
+    const mesesConDatos = cumplimientoMeses.filter(v => v > 0);
 
     const YTD =
       mesesConDatos.length > 0
         ? (
-            mesesConDatos.reduce((a, b) => a + b, 0)
-            / mesesConDatos.length
+            mesesConDatos.reduce((a, b) => a + b, 0) /
+            mesesConDatos.length
           ).toFixed(2)
         : 0;
 
