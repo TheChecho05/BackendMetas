@@ -1,6 +1,11 @@
 import Metas from "../models/metas.js";
 import mongoose from "mongoose";
 
+const traduccionesTipo = {
+  "MANTENIMIENTOS CORRECTIVOS": "CUMPLIMIENTO DE CORRECTIVOS",
+  "SL ACIDO": "SL Acido (KA)",
+};
+
 const httpMetas = {
   getMetas: async (req, res) => {
     try {
@@ -110,9 +115,11 @@ const httpMetas = {
     try {
       const { idusuario, tipo } = req.params;
 
+      const tipoBusqueda = traduccionesTipo[tipo] || tipo;
+
       const metas = await Metas.find({
         idusuario: new mongoose.Types.ObjectId(idusuario),
-        tipo: tipo,
+        tipo: tipoBusqueda,
       }).select("valorideal mes anio");
 
       if (!metas || metas.length === 0) {
@@ -137,9 +144,11 @@ const httpMetas = {
     try {
       const { idusuario, tipo } = req.params;
 
+      const tipoBusqueda = traduccionesTipo[tipo] || tipo;
+
       const metas = await Metas.find({
         idusuario: new mongoose.Types.ObjectId(idusuario),
-        tipo,
+        tipo: tipoBusqueda,
       }).select("valor mes anio");
 
       if (!metas || metas.length === 0) {
@@ -174,9 +183,11 @@ const httpMetas = {
     try {
       const { idusuario, tipo } = req.params;
 
+      const tipoBusqueda = traduccionesTipo[tipo] || tipo;
+
       const metas = await Metas.find({
         idusuario: new mongoose.Types.ObjectId(idusuario),
-        tipo,
+        tipo: tipoBusqueda,
       }).select("valor valorideal mes anio");
 
       if (!metas || metas.length === 0) {
@@ -227,9 +238,11 @@ const httpMetas = {
     try {
       const { idusuario, tipo, anio } = req.params;
 
+      const tipoBusqueda = traduccionesTipo[tipo] || tipo;
+
       const metas = await Metas.find({
         idusuario: new mongoose.Types.ObjectId(idusuario),
-        tipo,
+        tipo: tipoBusqueda,
         anio: Number(anio),
       }).select("valor valorideal mes anio");
 
@@ -770,7 +783,7 @@ const httpMetas = {
 
           case "MANTENIMIENTOS CORRECTIVOS":
           case "CUMPLIMIENTO DE CORRECTIVOS":
-          cumplida = meta.valor >= meta.valorideal;
+            cumplida = meta.valor >= meta.valorideal;
             break;
 
           case "Service Level in full":
