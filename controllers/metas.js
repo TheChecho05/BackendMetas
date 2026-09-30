@@ -26,115 +26,86 @@ const httpMetas = {
     }
   },
   postMetas: async (req, res) => {
-  try {
+    try {
+      const { tipo, valor, valorideal, texto, mes, anio, idusuario } = req.body;
 
-    const {
-      tipo,
-      valor,
-      valorideal,
-      texto,
-      mes,
-      anio,
-      idusuario
-    } = req.body;
-
-    // Validar duplicados
-    const existeMeta = await Metas.findOne({
-      tipo,
-      mes,
-      anio,
-      idusuario
-    });
-
-    if (existeMeta) {
-      return res.status(400).json({
-        message:
-          "Ya existe una meta, Con este mes y año"
-      });
-    }
-
-    const meta = new Metas({
-      tipo,
-      valor,
-      valorideal,
-      texto,
-      mes,
-      anio,
-      idusuario,
-    });
-
-    await meta.save();
-
-    res.json({
-      message: "Meta creada satisfactoriamente",
-      meta
-    });
-
-  } catch (error) {
-
-    console.log(error);
-
-    res.status(400).json({
-      err: "No se pudo crear la meta"
-    });
-
-  }
-},
-  putMetas: async (req, res) => {
-
-  try {
-
-    const { id } = req.params;
-
-    const {
-      tipo,
-      mes,
-      anio,
-      idusuario,
-      ...resto
-    } = req.body;
-
-    // Buscar si ya existe otra meta igual
-    const existeMeta = await Metas.findOne({
-      tipo,
-      mes,
-      anio,
-      idusuario,
-      _id: { $ne: id } // excluir la actual
-    });
-
-    if (existeMeta) {
-      return res.status(400).json({
-        message:
-          "Ya existe una meta con ese tipo, mes y año para este usuario"
-      });
-    }
-
-    const meta = await Metas.findByIdAndUpdate(
-      id,
-      {
+      const existeMeta = await Metas.findOne({
         tipo,
         mes,
         anio,
         idusuario,
-        ...resto
-      },
-      { new: true }
-    );
+      });
 
-    res.json(meta);
+      if (existeMeta) {
+        return res.status(400).json({
+          message: "Ya existe una meta, Con este mes y año",
+        });
+      }
 
-  } catch (error) {
+      const meta = new Metas({
+        tipo,
+        valor,
+        valorideal,
+        texto,
+        mes,
+        anio,
+        idusuario,
+      });
 
-    console.log(error);
+      await meta.save();
 
-    res.status(400).json({
-      err: "No se pudo actualizar la meta"
-    });
+      res.json({
+        message: "Meta creada satisfactoriamente",
+        meta,
+      });
+    } catch (error) {
+      console.log(error);
+      res.status(400).json({
+        err: "No se pudo crear la meta",
+      });
+    }
+  },
+  putMetas: async (req, res) => {
+    try {
+      const { id } = req.params;
 
-  }
+      const { tipo, mes, anio, idusuario, ...resto } = req.body;
 
-},
+      const existeMeta = await Metas.findOne({
+        tipo,
+        mes,
+        anio,
+        idusuario,
+        _id: { $ne: id },
+      });
+
+      if (existeMeta) {
+        return res.status(400).json({
+          message:
+            "Ya existe una meta con ese tipo, mes y año para este usuario",
+        });
+      }
+
+      const meta = await Metas.findByIdAndUpdate(
+        id,
+        {
+          tipo,
+          mes,
+          anio,
+          idusuario,
+          ...resto,
+        },
+        { new: true }
+      );
+
+      res.json(meta);
+    } catch (error) {
+      console.log(error);
+      res.status(400).json({
+        err: "No se pudo actualizar la meta",
+      });
+    }
+  },
   getAcByUsuario: async (req, res) => {
     try {
       const { idusuario, tipo } = req.params;
@@ -253,820 +224,689 @@ const httpMetas = {
     }
   },
   getPromediosTodosAnio: async (req, res) => {
-  try {
-    const { idusuario, tipo, anio } = req.params;
-    console.log("========== DEBUG GRAFICA ==========");
-console.log("idusuario:", idusuario);
-console.log("tipo:", JSON.stringify(tipo));
-console.log("anio:", anio);
-console.log("anio convertido:", Number(anio));
+    try {
+      const { idusuario, tipo, anio } = req.params;
 
-const metasUsuario = await Metas.find({
-  idusuario: new mongoose.Types.ObjectId(idusuario)
-}).select("tipo anio mes valor valorideal idusuario");
+      const metas = await Metas.find({
+        idusuario: new mongoose.Types.ObjectId(idusuario),
+        tipo,
+        anio: Number(anio),
+      }).select("valor valorideal mes anio");
 
-console.log("Metas de este usuario:", metasUsuario);
-console.log("==================================");
-
-    const metas = await Metas.find({
-      idusuario: new mongoose.Types.ObjectId(idusuario),
-      tipo,
-      anio: Number(anio),
-    }).select("valor valorideal mes anio");
-
-    if (!metas || metas.length === 0) {
-      return res.status(404).json({
-        message: "No hay metas para este usuario en el año seleccionado",
-      });
-    }
-
-    const valoresPorMes = Array(12).fill(0);
-    const valoresIdealPorMes = Array(12).fill(0);
-
-    const mesesConValor = [];
-    const mesesConValorIdeal = [];
-
-    metas.forEach((m) => {
-      const indice = m.mes - 1;
-
-      valoresPorMes[indice] = m.valor;
-
-      if (m.valorideal !== undefined && m.valorideal !== null) {
-        valoresIdealPorMes[indice] = m.valorideal;
-        mesesConValorIdeal.push(m.valorideal);
+      if (!metas || metas.length === 0) {
+        return res.status(404).json({
+          message: "No hay metas para este usuario en el año seleccionado",
+        });
       }
 
-      mesesConValor.push(m.valor);
-    });
+      const valoresPorMes = Array(12).fill(0);
+      const valoresIdealPorMes = Array(12).fill(0);
 
-    const promedio =
-      mesesConValor.reduce((a, b) => a + b, 0) /
-      mesesConValor.length;
+      const mesesConValor = [];
+      const mesesConValorIdeal = [];
 
-    const promedioIdeal =
-      mesesConValorIdeal.length > 0
-        ? mesesConValorIdeal.reduce((a, b) => a + b, 0) /
-          mesesConValorIdeal.length
-        : 0;
+      metas.forEach((m) => {
+        const indice = m.mes - 1;
 
-    res.json({
-      tipo,
-      anio,
-      valores: valoresPorMes,
-      promedio: Math.round(promedio * 100) / 100,
-      valoresIdeal: valoresIdealPorMes,
-      promedioIdeal: Math.round(promedioIdeal * 100) / 100,
-    });
+        valoresPorMes[indice] = m.valor;
 
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      error: "Error al calcular promedios por año",
-    });
-  }
-},
+        if (m.valorideal !== undefined && m.valorideal !== null) {
+          valoresIdealPorMes[indice] = m.valorideal;
+          mesesConValorIdeal.push(m.valorideal);
+        }
+
+        mesesConValor.push(m.valor);
+      });
+
+      const promedio =
+        mesesConValor.reduce((a, b) => a + b, 0) / mesesConValor.length;
+
+      const promedioIdeal =
+        mesesConValorIdeal.length > 0
+          ? mesesConValorIdeal.reduce((a, b) => a + b, 0) /
+            mesesConValorIdeal.length
+          : 0;
+
+      res.json({
+        tipo,
+        anio,
+        valores: valoresPorMes,
+        promedio: Math.round(promedio * 100) / 100,
+        valoresIdeal: valoresIdealPorMes,
+        promedioIdeal: Math.round(promedioIdeal * 100) / 100,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        error: "Error al calcular promedios por año",
+      });
+    }
+  },
   getCumplimientoAnual: async (req, res) => {
-  try {
-    const { idusuario } = req.params;
+    try {
+      const { idusuario } = req.params;
 
-    const pesos = {
-      "DPO": 20,
-      "NPS": 15,
-      "OTIF": 15,
-      "HCD": 10,
-      "IRA": 15,
-      "SCO": 15,
-      "ATCT": 10,
-      "WNP": 10,
-      "RUTAS SIF": 20,
-      "SIF INDEX": 15,
-      "ACIS": 15,
-      "LTI": 15,
-      "ON TIME": 20,
-      "ASSET EFFICIENCY": 20,
-      "CUMPLIMIENTO DE CORRECTIVOS": 20,
-      "DISPONIBILIDAD DE FLOTA": 20,
-      "VLC T2": 10,
-      "VLC LS": 10,
-      "HL NO ENTREGADO": 10,
-      "HL NO PLANEADO": 10,
-      "TOTAL PRODUCTIVITY": 10,
-      "ENTREGA RANGO": 10,
-      "Asset Efficiency - MAZ": 20,
-      "Service Level in full": 10,
-      "TSO MAZ": 10,
-      "VLC TOTAL (P&P)": 20,
-      "Modelos de Distribucion": 0,
-      "SCL": 0,
-      "TP": 0,
-      "NPS DB": 0,
-      "CONTROL POLICIES": 0
-    };
+      const pesos = {
+        "DPO": 20,
+        "NPS": 15,
+        "OTIF": 15,
+        "HCD": 10,
+        "IRA": 15,
+        "SCO": 15,
+        "ATCT": 10,
+        "WNP": 10,
+        "RUTAS SIF": 20,
+        "SIF INDEX": 15,
+        "ACIS": 15,
+        "LTI": 15,
+        "ON TIME": 20,
+        "ASSET EFFIENCIENCY": 20,
+        "CUMPLIMIENTO DE CORRECTIVOS": 20,
+        "DISPONIBILIDAD DE FLOTA": 20,
+        "VLC T2": 10,
+        "VLC LS": 10,
+        "HL NO ENTREGADO": 10,
+        "HL NO PLANEADO": 10,
+        "TOTAL PRODUCTIVITY": 10,
+        "ENTREGA RANGO": 10,
+        "Asset Efficiency - MAZ": 20,
+        "Service Level in full": 10,
+        "TSO MAZ": 10,
+        "VLC TOTAL (P&P)": 20,
+        "Modelos de Distribucion": 0,
+        "SCL": 0,
+        "TP": 0,
+        "NPS DB": 0,
+        "CONTROL POLICIES": 0
+      };
 
-    const metas = await Metas.find({
-      idusuario: new mongoose.Types.ObjectId(idusuario)
-    });
-
-    if (!metas || metas.length === 0) {
-      return res.status(404).json({ message: "No se encontraron metas para este usuario" });
-    }
-
-    let cumplimientoMeses = Array(12).fill(0);
-    let grupoEspecial = Array.from({ length: 12 }, () => []);
-
-    metas.forEach(meta => {
-      const peso = pesos[meta.tipo] || 0;
-      let cumplida = false;
-
-      switch (meta.tipo) {
-        case "DPO": cumplida = meta.valor >= meta.valorideal; break;
-        case "NPS": cumplida = meta.valor <= meta.valorideal; break;
-        case "OTIF": cumplida = meta.valor <= meta.valorideal; break;
-        case "HCD": cumplida = meta.valorideal > meta.valor; break;
-        case "VLC T2": cumplida = meta.valorideal < meta.valor; break;
-        case "HL NO ENTREGADO": cumplida = meta.valorideal < meta.valor; break;
-        case "TOTAL PRODUCTIVITY": cumplida = meta.valor < meta.valorideal; break;
-        case "ENTREGA RANGO": cumplida = meta.valorideal > meta.valor; break;
-        case "VLC LS": cumplida = meta.valor >= meta.valorideal; break;
-        case "IRA": cumplida = meta.valor <= meta.valorideal; break;
-        case "SCO": cumplida = meta.valorideal > meta.valor; break;
-        case "ATCT": cumplida = meta.valorideal < meta.valor; break;
-        case "WNP": cumplida = meta.valorideal > meta.valor; break;
-        case "HL NO PLANEADO": cumplida = meta.valorideal > meta.valor; break;
-        case "RUTAS SIF": cumplida = meta.valor >= meta.valorideal; break;
-        case "SIF INDEX": cumplida = meta.valorideal >= meta.valor; break;
-        case "ACIS": cumplida = meta.valorideal >= meta.valor; break;
-        case "LTI": cumplida = meta.valor <= meta.valorideal; break;
-        case "ON TIME": cumplida = meta.valor <= meta.valorideal; break;
-        case "ASSET EFFICIENCY": cumplida = meta.valor >= meta.valorideal; break;
-        case "CUMPLIMIENTO DE CORRECTIVOS": cumplida = meta.valorideal > meta.valor; break;
-        case "DISPONIBILIDAD DE FLOTA": cumplida = meta.valorideal > meta.valor; break;
-        case "Asset Efficiency - MAZ": cumplida = meta.valorideal >= meta.valor; break;
-        case "Service Level in full": cumplida = meta.valorideal <= meta.valor; break;
-        case "TSO MAZ": cumplida = meta.valorideal <= meta.valor; break;
-        case "VLC TOTAL (P&P)": cumplida = meta.valorideal <= meta.valor; break;
-        case "Modelos de Distribucion":
-        case "SCL":
-        case "TP":
-        case "NPS DB":
-        case "CONTROL POLICIES":
-          cumplida = meta.valorideal > meta.valor;
-          grupoEspecial[meta.mes - 1].push(cumplida);
-          break;
-        default:
-          cumplida = meta.valor >= meta.valorideal;
-      }
-
-      if (peso > 0 && cumplida) {
-        cumplimientoMeses[meta.mes - 1] += peso;
-      }
-    });
-
-    grupoEspecial.forEach((cumplidas, index) => {
-      const totalCumplidas = cumplidas.filter(c => c).length;
-      if (totalCumplidas >= 4) {
-        cumplimientoMeses[index] += 20;
-      }
-    });
-
-    const nombresMeses = [
-      "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
-      "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
-    ];
-
-    const resultado = cumplimientoMeses.map((valor, i) => ({
-      mes: nombresMeses[i],
-      cumplimiento: `${valor}`
-    }));
-
-    // 👉 Cálculo del promedio YTD
-    const mesesConDatos = cumplimientoMeses.filter(v => v > 0);
-    const YTD = mesesConDatos.length > 0
-      ? (mesesConDatos.reduce((a, b) => a + b, 0) / mesesConDatos.length).toFixed(2)
-      : 0;
-
-    res.json({
-      idusuario,
-      cumplimientoAnual: resultado,
-      YTD: `${YTD}`
-    });
-
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al calcular el cumplimiento anual" });
-  }
-},
-getCumplimientoAnio: async (req, res) => {
-  try {
-
-    const { idusuario, anio } = req.params;
-
-    const pesos = {
-      "DPO": 20,
-      "NPS": 15,
-      "OTIF": 15,
-      "HCD": 10,
-      "IRA": 15,
-      "SCO": 15,
-      "ATCT": 10,
-      "WNP": 10,
-      "RUTAS SIF": 20,
-      "SIF INDEX": 15,
-      "ACIS": 15,
-      "LTI": 15,
-      "ON TIME": 20,
-      "ASSET EFFICIENCY": 20,
-      "CUMPLIMIENTO DE CORRECTIVOS": 20,
-      "DISPONIBILIDAD DE FLOTA": 20,
-      "VLC T2": 10,
-      "VLC LS": 10,
-      "HL NO ENTREGADO": 10,
-      "HL NO PLANEADO": 10,
-      "TOTAL PRODUCTIVITY": 10,
-      "ENTREGA RANGO": 10,
-      "Asset Efficiency - MAZ": 20,
-      "Service Level in full": 10,
-      "TSO MAZ": 10,
-      "VLC TOTAL (P&P)": 20,
-      "Modelos de Distribucion": 0,
-      "SCL": 0,
-      "TP": 0,
-      "NPS DB": 0,
-      "CONTROL POLICIES": 0
-    };
-
-    const metas = await Metas.find({
-      idusuario: new mongoose.Types.ObjectId(idusuario),
-      anio: Number(anio)
-    });
-
-    if (!metas || metas.length === 0) {
-      return res.status(404).json({
-        message: "No se encontraron metas para este usuario en ese año"
+      const metas = await Metas.find({
+        idusuario: new mongoose.Types.ObjectId(idusuario)
       });
-    }
 
-    let cumplimientoMeses = Array(12).fill(0);
-
-    let grupoEspecial = Array.from(
-      { length: 12 },
-      () => []
-    );
-
-    metas.forEach(meta => {
-
-      const peso = pesos[meta.tipo] || 0;
-
-      let cumplida = false;
-
-      switch (meta.tipo) {
-
-        case "DPO":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        case "NPS":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        case "OTIF":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        case "HCD":
-          cumplida = meta.valorideal > meta.valor;
-          break;
-
-        case "VLC T2":
-          cumplida = meta.valorideal < meta.valor;
-          break;
-
-        case "HL NO ENTREGADO":
-          cumplida = meta.valorideal < meta.valor;
-          break;
-
-        case "TOTAL PRODUCTIVITY":
-          cumplida = meta.valor < meta.valorideal;
-          break;
-
-        case "ENTREGA RANGO":
-          cumplida = meta.valorideal > meta.valor;
-          break;
-
-        case "VLC LS":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        case "IRA":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        case "SCO":
-          cumplida = meta.valorideal > meta.valor;
-          break;
-
-        case "ATCT":
-          cumplida = meta.valorideal < meta.valor;
-          break;
-
-        case "WNP":
-          cumplida = meta.valorideal > meta.valor;
-          break;
-
-        case "HL NO PLANEADO":
-          cumplida = meta.valorideal > meta.valor;
-          break;
-
-        case "RUTAS SIF":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        case "SIF INDEX":
-          cumplida = meta.valorideal >= meta.valor;
-          break;
-
-        case "ACIS":
-          cumplida = meta.valorideal >= meta.valor;
-          break;
-
-        case "LTI":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        case "ON TIME":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        case "ASSET EFFICIENCY":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        case "CUMPLIMIENTO DE CORRECTIVOS":
-          cumplida = meta.valorideal > meta.valor;
-          break;
-
-        case "DISPONIBILIDAD DE FLOTA":
-          cumplida = meta.valorideal > meta.valor;
-          break;
-
-        case "Asset Efficiency - MAZ":
-          cumplida = meta.valorideal >= meta.valor;
-          break;
-
-        case "Service Level in full":
-          cumplida = meta.valorideal <= meta.valor;
-          break;
-
-        case "TSO MAZ":
-          cumplida = meta.valorideal <= meta.valor;
-          break;
-
-        case "VLC TOTAL (P&P)":
-          cumplida = meta.valorideal <= meta.valor;
-          break;
-
-        case "Modelos de Distribucion":
-        case "SCL":
-        case "TP":
-        case "NPS DB":
-        case "CONTROL POLICIES":
-
-          cumplida = meta.valorideal > meta.valor;
-
-          grupoEspecial[meta.mes - 1].push(cumplida);
-
-          break;
-
-        default:
-          cumplida = meta.valor >= meta.valorideal;
+      if (!metas || metas.length === 0) {
+        return res.status(404).json({ message: "No se encontraron metas para este usuario" });
       }
 
-      if (peso > 0 && cumplida) {
-        cumplimientoMeses[meta.mes - 1] += peso;
-      }
+      let cumplimientoMeses = Array(12).fill(0);
+      let grupoEspecial = Array.from({ length: 12 }, () => []);
 
-    });
+      metas.forEach(meta => {
+        const peso = pesos[meta.tipo] || 0;
+        let cumplida = false;
 
-    grupoEspecial.forEach((cumplidas, index) => {
+        switch (meta.tipo) {
+          case "DPO": cumplida = meta.valor >= meta.valorideal; break;
+          case "NPS": cumplida = meta.valor <= meta.valorideal; break;
+          case "OTIF": cumplida = meta.valor <= meta.valorideal; break;
+          case "HCD": cumplida = meta.valorideal > meta.valor; break;
+          case "VLC T2": cumplida = meta.valorideal < meta.valor; break;
+          case "HL NO ENTREGADO": cumplida = meta.valorideal < meta.valor; break;
+          case "TOTAL PRODUCTIVITY": cumplida = meta.valor < meta.valorideal; break;
+          case "ENTREGA RANGO": cumplida = meta.valorideal > meta.valor; break;
+          case "VLC LS": cumplida = meta.valor >= meta.valorideal; break;
+          case "IRA": cumplida = meta.valor <= meta.valorideal; break;
+          case "SCO": cumplida = meta.valorideal > meta.valor; break;
+          case "ATCT": cumplida = meta.valorideal < meta.valor; break;
+          case "WNP": cumplida = meta.valorideal > meta.valor; break;
+          case "HL NO PLANEADO": cumplida = meta.valorideal > meta.valor; break;
+          case "RUTAS SIF": cumplida = meta.valor >= meta.valorideal; break;
+          case "SIF INDEX": cumplida = meta.valorideal >= meta.valor; break;
+          case "ACIS": cumplida = meta.valorideal >= meta.valor; break;
+          case "LTI": cumplida = meta.valor <= meta.valorideal; break;
+          case "ON TIME": cumplida = meta.valor <= meta.valorideal; break;
+          case "ASSET EFFIENCIENCY": cumplida = meta.valor >= meta.valorideal; break;
+          case "CUMPLIMIENTO DE CORRECTIVOS": cumplida = meta.valorideal > meta.valor; break;
+          case "DISPONIBILIDAD DE FLOTA": cumplida = meta.valorideal > meta.valor; break;
+          case "Asset Efficiency - MAZ": cumplida = meta.valorideal >= meta.valor; break;
+          case "Service Level in full": cumplida = meta.valorideal <= meta.valor; break;
+          case "TSO MAZ": cumplida = meta.valorideal <= meta.valor; break;
+          case "VLC TOTAL (P&P)": cumplida = meta.valorideal <= meta.valor; break;
+          case "Modelos de Distribucion":
+          case "SCL":
+          case "TP":
+          case "NPS DB":
+          case "CONTROL POLICIES":
+            cumplida = meta.valorideal > meta.valor;
+            grupoEspecial[meta.mes - 1].push(cumplida);
+            break;
+          default:
+            cumplida = meta.valor >= meta.valorideal;
+        }
 
-      const totalCumplidas =
-        cumplidas.filter(c => c).length;
+        if (peso > 0 && cumplida) {
+          cumplimientoMeses[meta.mes - 1] += peso;
+        }
+      });
 
-      if (totalCumplidas >= 4) {
-        cumplimientoMeses[index] += 20;
-      }
+      grupoEspecial.forEach((cumplidas, index) => {
+        const totalCumplidas = cumplidas.filter(c => c).length;
+        if (totalCumplidas >= 4) {
+          cumplimientoMeses[index] += 20;
+        }
+      });
 
-    });
+      const nombresMeses = [
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+      ];
 
-    const nombresMeses = [
-      "Enero",
-      "Febrero",
-      "Marzo",
-      "Abril",
-      "Mayo",
-      "Junio",
-      "Julio",
-      "Agosto",
-      "Septiembre",
-      "Octubre",
-      "Noviembre",
-      "Diciembre"
-    ];
+      const resultado = cumplimientoMeses.map((valor, i) => ({
+        mes: nombresMeses[i],
+        cumplimiento: `${valor}`
+      }));
 
-    const resultado = cumplimientoMeses.map((valor, i) => ({
-      mes: nombresMeses[i],
-      cumplimiento: `${valor}`
-    }));
-
-    const mesesConDatos =
-      cumplimientoMeses.filter(v => v > 0);
-
-    const YTD =
-      mesesConDatos.length > 0
-        ? (
-            mesesConDatos.reduce((a, b) => a + b, 0)
-            / mesesConDatos.length
-          ).toFixed(2)
+      const mesesConDatos = cumplimientoMeses.filter(v => v > 0);
+      const YTD = mesesConDatos.length > 0
+        ? (mesesConDatos.reduce((a, b) => a + b, 0) / mesesConDatos.length).toFixed(2)
         : 0;
 
-    res.json({
-      idusuario,
-      anio,
-      cumplimientoAnual: resultado,
-      YTD: `${YTD}`
-    });
+      res.json({
+        idusuario,
+        cumplimientoAnual: resultado,
+        YTD: `${YTD}`
+      });
 
-  } catch (error) {
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Error al calcular el cumplimiento anual" });
+    }
+  },
+  getCumplimientoAnio: async (req, res) => {
+    try {
+      const { idusuario, anio } = req.params;
 
-    console.error(error);
+      const pesos = {
+        "DPO": 20,
+        "NPS": 15,
+        "OTIF": 15,
+        "HCD": 10,
+        "IRA": 15,
+        "SCO": 15,
+        "ATCT": 10,
+        "WNP": 10,
+        "RUTAS SIF": 20,
+        "SIF INDEX": 15,
+        "ACIS": 15,
+        "LTI": 15,
+        "ON TIME": 20,
+        "ASSET EFFIENCIENCY": 20,
+        "CUMPLIMIENTO DE CORRECTIVOS": 20,
+        "DISPONIBILIDAD DE FLOTA": 20,
+        "VLC T2": 10,
+        "VLC LS": 10,
+        "HL NO ENTREGADO": 10,
+        "HL NO PLANEADO": 10,
+        "TOTAL PRODUCTIVITY": 10,
+        "ENTREGA RANGO": 10,
+        "Asset Efficiency - MAZ": 20,
+        "Service Level in full": 10,
+        "TSO MAZ": 10,
+        "VLC TOTAL (P&P)": 20,
+        "Modelos de Distribucion": 0,
+        "SCL": 0,
+        "TP": 0,
+        "NPS DB": 0,
+        "CONTROL POLICIES": 0
+      };
 
-    res.status(500).json({
-      error: "Error al calcular el cumplimiento anual"
-    });
+      const metas = await Metas.find({
+        idusuario: new mongoose.Types.ObjectId(idusuario),
+        anio: Number(anio)
+      });
 
-  }
-},
-getCumplimiento2026: async (req, res) => {
-  try {
+      if (!metas || metas.length === 0) {
+        return res.status(404).json({
+          message: "No se encontraron metas para este usuario en ese año"
+        });
+      }
 
-    const { idusuario, anio } = req.params;
+      let cumplimientoMeses = Array(12).fill(0);
 
-    const pesos = {
-      "ACIS": 15,
-      "ASSET EFFICIENCY": 15,
-      "ASSET UTILIZATION": 15,
-      "ATCT 1": 10,
-      "ATCT 2": 5,
-      "CO Logistic T2 Regional Dashboard": 25,
-      "DELIVERY EXPERIENCE": 10,
-      "DISPONIBILIDAD DE FLOTA": 20,
-      "DPO": 20,
-      "HL NO ENTREGADO": 5,
-      "HL NO PLANEADO": 10,
-      "LTI's": 15,
-      "MANTENIMIENTOS CORRECTIVOS": 10,
-      "NPS 1": 15,
-      "NPS 2": 5,
-      "ON TIME": 20,
-      "OTIF": 15,
-      "ROUTE TO MARKET": 5,
-      "RTM": 5,
-      "RUTAS SIF": 20,
-      "SCO": 15,
-      "Service Level in full": 10,
-      "SIF INDEX": 15,
-      "SL Acido (KA)": 5,
-      "TOTAL PRODUCTIVITY": 10,
-      "Total losses (Productividad)": 15,
-      "TRI": 5,
-      "TSO": 10,
-      "TSO MAZ": 10,
-      "VLC LS": 20,
-      "VLC T2": 20,
-      "VLC TOTAL (P&P)": 20,
-      "WNP": 5
-    };
+      let grupoEspecial = Array.from(
+        { length: 12 },
+        () => []
+      );
 
-    const metas = await Metas.find({
-      idusuario: new mongoose.Types.ObjectId(idusuario),
-      anio: Number(anio)
-    });
+      metas.forEach(meta => {
+        const peso = pesos[meta.tipo] || 0;
 
-    if (!metas || metas.length === 0) {
-      return res.status(404).json({
-        message: "No se encontraron metas para este usuario en ese año"
+        let cumplida = false;
+
+        switch (meta.tipo) {
+          case "DPO":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "NPS":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "OTIF":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "HCD":
+            cumplida = meta.valorideal > meta.valor;
+            break;
+
+          case "VLC T2":
+            cumplida = meta.valorideal < meta.valor;
+            break;
+
+          case "HL NO ENTREGADO":
+            cumplida = meta.valorideal < meta.valor;
+            break;
+
+          case "TOTAL PRODUCTIVITY":
+            cumplida = meta.valor < meta.valorideal;
+            break;
+
+          case "ENTREGA RANGO":
+            cumplida = meta.valorideal > meta.valor;
+            break;
+
+          case "VLC LS":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "IRA":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "SCO":
+            cumplida = meta.valorideal > meta.valor;
+            break;
+
+          case "ATCT":
+            cumplida = meta.valorideal < meta.valor;
+            break;
+
+          case "WNP":
+            cumplida = meta.valorideal > meta.valor;
+            break;
+
+          case "HL NO PLANEADO":
+            cumplida = meta.valorideal > meta.valor;
+            break;
+
+          case "RUTAS SIF":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "SIF INDEX":
+            cumplida = meta.valorideal >= meta.valor;
+            break;
+
+          case "ACIS":
+            cumplida = meta.valorideal >= meta.valor;
+            break;
+
+          case "LTI":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "ON TIME":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "ASSET EFFIENCIENCY":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "CUMPLIMIENTO DE CORRECTIVOS":
+            cumplida = meta.valorideal > meta.valor;
+            break;
+
+          case "DISPONIBILIDAD DE FLOTA":
+            cumplida = meta.valorideal > meta.valor;
+            break;
+
+          case "Asset Efficiency - MAZ":
+            cumplida = meta.valorideal >= meta.valor;
+            break;
+
+          case "Service Level in full":
+            cumplida = meta.valorideal <= meta.valor;
+            break;
+
+          case "TSO MAZ":
+            cumplida = meta.valorideal <= meta.valor;
+            break;
+
+          case "VLC TOTAL (P&P)":
+            cumplida = meta.valorideal <= meta.valor;
+            break;
+
+          case "Modelos de Distribucion":
+          case "SCL":
+          case "TP":
+          case "NPS DB":
+          case "CONTROL POLICIES":
+            cumplida = meta.valorideal > meta.valor;
+            grupoEspecial[meta.mes - 1].push(cumplida);
+            break;
+
+          default:
+            cumplida = meta.valor >= meta.valorideal;
+        }
+
+        if (peso > 0 && cumplida) {
+          cumplimientoMeses[meta.mes - 1] += peso;
+        }
+      });
+
+      grupoEspecial.forEach((cumplidas, index) => {
+        const totalCumplidas =
+          cumplidas.filter(c => c).length;
+
+        if (totalCumplidas >= 4) {
+          cumplimientoMeses[index] += 20;
+        }
+      });
+
+      const nombresMeses = [
+        "Enero",
+        "Febrero",
+        "Marzo",
+        "Abril",
+        "Mayo",
+        "Junio",
+        "Julio",
+        "Agosto",
+        "Septiembre",
+        "Octubre",
+        "Noviembre",
+        "Diciembre"
+      ];
+
+      const resultado = cumplimientoMeses.map((valor, i) => ({
+        mes: nombresMeses[i],
+        cumplimiento: `${valor}`
+      }));
+
+      const mesesConDatos =
+        cumplimientoMeses.filter(v => v > 0);
+
+      const YTD =
+        mesesConDatos.length > 0
+          ? (
+              mesesConDatos.reduce((a, b) => a + b, 0)
+              / mesesConDatos.length
+            ).toFixed(2)
+          : 0;
+
+      res.json({
+        idusuario,
+        anio,
+        cumplimientoAnual: resultado,
+        YTD: `${YTD}`
+      });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        error: "Error al calcular el cumplimiento anual"
       });
     }
+  },
+  getCumplimiento2026: async (req, res) => {
+    try {
+      const { idusuario, anio } = req.params;
 
-    let cumplimientoMeses = Array(12).fill(0);
+      const pesos = {
+        "ACIS": 15,
+        "ASSET EFFIENCIENCY": 15,
+        "ASSET UTILIZATION": 15,
+        "ATCT 1": 10,
+        "ATCT 2": 5,
+        "CO Logistic T2 Regional Dashboard": 25,
+        "DELIVERY EXPERIENCE": 10,
+        "DISPONIBILIDAD DE FLOTA": 20,
+        "DPO": 20,
+        "HL NO ENTREGADO": 5,
+        "HL NO PLANEADO": 10,
+        "LTI's": 15,
+        "MANTENIMIENTOS CORRECTIVOS": 10,
+        "NPS 1": 15,
+        "NPS 2": 5,
+        "ON TIME": 20,
+        "OTIF": 15,
+        "ROUTE TO MARKET": 5,
+        "RTM": 5,
+        "RUTAS SIF": 20,
+        "SCO": 15,
+        "Service Level in full": 10,
+        "SIF INDEX": 15,
+        "SL Acido (KA)": 5,
+        "TOTAL PRODUCTIVITY": 10,
+        "Total losses (Productividad)": 15,
+        "TRI": 5,
+        "TSO": 10,
+        "TSO MAZ": 10,
+        "VLC LS": 20,
+        "VLC T2": 20,
+        "VLC TOTAL (P&P)": 20,
+        "WNP": 5
+      };
 
-    metas.forEach(meta => {
+      const metas = await Metas.find({
+        idusuario: new mongoose.Types.ObjectId(idusuario),
+        anio: Number(anio)
+      });
 
-      const peso = pesos[meta.tipo] || 0;
-
-      let cumplida = false;
-
-      switch (meta.tipo) {
-
-        // ===========================
-        // DPO
-        // ===========================
-        case "DPO":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // NPS
-        // ===========================
-        case "NPS 1":
-        case "NPS 2":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        // ===========================
-        // OTIF
-        // ===========================
-        case "OTIF":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        // ===========================
-        // SCO
-        // ===========================
-        case "SCO":
-          cumplida = meta.valorideal > meta.valor;
-          break;
-
-        // ===========================
-        // ATCT
-        // ===========================
-        case "ATCT 1":
-        case "ATCT 2":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // WNP
-        // ===========================
-        case "WNP":
-          cumplida = meta.valorideal > meta.valor;
-          break;
-
-        // ===========================
-        // HL NO PLANEADO
-        // ===========================
-        case "HL NO PLANEADO":
-          cumplida = meta.valorideal > meta.valor;
-          break;
-
-        // ===========================
-        // RUTAS SIF
-        // ===========================
-        case "RUTAS SIF":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // SIF INDEX
-        // ===========================
-        case "SIF INDEX":
-          cumplida = meta.valorideal >= meta.valor;
-          break;
-
-        // ===========================
-        // ACIS
-        // ===========================
-        case "ACIS":
-          cumplida = meta.valorideal >= meta.valor;
-          break;
-
-        // ===========================
-        // ON TIME
-        // ===========================
-        case "ON TIME":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        // ===========================
-        // ASSET EFFICIENCY
-        // ===========================
-        case "ASSET EFFICIENCY":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        // ===========================
-        // ASSET UTILIZATION
-        // ===========================
-        case "ASSET UTILIZATION":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        // ===========================
-        // DISPONIBILIDAD DE FLOTA
-        // ===========================
-        case "DISPONIBILIDAD DE FLOTA":
-          cumplida = meta.valorideal > meta.valor;
-          break;
-
-        // ===========================
-        // MANTENIMIENTOS CORRECTIVOS
-        // ===========================
-        case "MANTENIMIENTOS CORRECTIVOS":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // SERVICE LEVEL IN FULL
-        // ===========================
-        case "Service Level in full":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // TSO MAZ
-        // ===========================
-        case "TSO MAZ":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // VLC TOTAL
-        // ===========================
-        case "VLC TOTAL (P&P)":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // VLC LS
-        // ===========================
-        case "VLC LS":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // HL NO ENTREGADO
-        // ===========================
-        case "HL NO ENTREGADO":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // TOTAL PRODUCTIVITY
-        // ===========================
-        case "TOTAL PRODUCTIVITY":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        // ===========================
-        // VLC T2
-        // ===========================
-        case "VLC T2":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // DELIVERY EXPERIENCE
-        // ===========================
-        case "DELIVERY EXPERIENCE":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // ROUTE TO MARKET
-        // ===========================
-        case "ROUTE TO MARKET":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        // ===========================
-        // RTM
-        // ===========================
-        case "RTM":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        // ===========================
-        // LTI
-        // ===========================
-        case "LTI's":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // TOTAL LOSSES
-        // ===========================
-        case "Total losses (Productividad)":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        // ===========================
-        // TRI
-        // (Se maneja con datos 1/1 o 0/0)
-        // ===========================
-        case "TRI":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // TSO
-        // ===========================
-        case "TSO":
-          cumplida = meta.valor <= meta.valorideal;
-          break;
-
-        // ===========================
-        // SL ACIDO
-        // ===========================
-        case "SL Acido (KA)":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        // ===========================
-        // CO LOGISTIC DASHBOARD
-        // (No debería llegar porque se evalúan las 5 metas individuales)
-        // ===========================
-        case "CO Logistic T2 Regional Dashboard":
-          cumplida = meta.valor >= meta.valorideal;
-          break;
-
-        default:
-          cumplida = meta.valor >= meta.valorideal;
+      if (!metas || metas.length === 0) {
+        return res.status(404).json({
+          message: "No se encontraron metas para este usuario en ese año"
+        });
       }
 
-      if (peso > 0 && cumplida) {
-        cumplimientoMeses[meta.mes - 1] += peso;
+      let cumplimientoMeses = Array(12).fill(0);
+
+      metas.forEach(meta => {
+        const peso = pesos[meta.tipo] || 0;
+
+        let cumplida = false;
+
+        switch (meta.tipo) {
+          case "DPO":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "NPS 1":
+          case "NPS 2":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "OTIF":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "SCO":
+            cumplida = meta.valorideal > meta.valor;
+            break;
+
+          case "ATCT 1":
+          case "ATCT 2":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "WNP":
+            cumplida = meta.valorideal > meta.valor;
+            break;
+
+          case "HL NO PLANEADO":
+            cumplida = meta.valorideal > meta.valor;
+            break;
+
+          case "RUTAS SIF":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "SIF INDEX":
+            cumplida = meta.valorideal >= meta.valor;
+            break;
+
+          case "ACIS":
+            cumplida = meta.valorideal >= meta.valor;
+            break;
+
+          case "ON TIME":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "ASSET EFFIENCIENCY":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "ASSET UTILIZATION":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "DISPONIBILIDAD DE FLOTA":
+            cumplida = meta.valorideal > meta.valor;
+            break;
+
+          case "MANTENIMIENTOS CORRECTIVOS":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "Service Level in full":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "TSO MAZ":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "VLC TOTAL (P&P)":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "VLC LS":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "HL NO ENTREGADO":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "TOTAL PRODUCTIVITY":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "VLC T2":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "DELIVERY EXPERIENCE":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "ROUTE TO MARKET":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "RTM":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "LTI's":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "Total losses (Productividad)":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "TRI":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "TSO":
+            cumplida = meta.valor <= meta.valorideal;
+            break;
+
+          case "SL Acido (KA)":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          case "CO Logistic T2 Regional Dashboard":
+            cumplida = meta.valor >= meta.valorideal;
+            break;
+
+          default:
+            cumplida = meta.valor >= meta.valorideal;
+        }
+
+        if (peso > 0 && cumplida) {
+          cumplimientoMeses[meta.mes - 1] += peso;
+        }
+      });
+
+      const nombresMeses = [
+        "Enero",
+        "Febrero",
+        "Marzo",
+        "Abril",
+        "Mayo",
+        "Junio",
+        "Julio",
+        "Agosto",
+        "Septiembre",
+        "Octubre",
+        "Noviembre",
+        "Diciembre"
+      ];
+
+      const resultado = cumplimientoMeses.map((valor, i) => ({
+        mes: nombresMeses[i],
+        cumplimiento: `${valor}`
+      }));
+
+      const mesesConDatos = cumplimientoMeses.filter(v => v > 0);
+
+      const YTD =
+        mesesConDatos.length > 0
+          ? (
+              mesesConDatos.reduce((a, b) => a + b, 0) /
+              mesesConDatos.length
+            ).toFixed(2)
+          : 0;
+
+      res.json({
+        idusuario,
+        anio,
+        cumplimientoAnual: resultado,
+        YTD: `${YTD}`
+      });
+
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        error: "Error al calcular el cumplimiento anual 2026"
+      });
+    }
+  },
+  deleteMetas: async (req, res) => {
+    try {
+      const { id } = req.params;
+
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "ID inválido" });
       }
 
-    });
+      const meta = await Metas.findByIdAndDelete(id);
 
-    const nombresMeses = [
-      "Enero",
-      "Febrero",
-      "Marzo",
-      "Abril",
-      "Mayo",
-      "Junio",
-      "Julio",
-      "Agosto",
-      "Septiembre",
-      "Octubre",
-      "Noviembre",
-      "Diciembre"
-    ];
+      if (!meta) {
+        return res.status(404).json({ message: "Meta no encontrada" });
+      }
 
-    const resultado = cumplimientoMeses.map((valor, i) => ({
-      mes: nombresMeses[i],
-      cumplimiento: `${valor}`
-    }));
-
-    const mesesConDatos = cumplimientoMeses.filter(v => v > 0);
-
-    const YTD =
-      mesesConDatos.length > 0
-        ? (
-            mesesConDatos.reduce((a, b) => a + b, 0) /
-            mesesConDatos.length
-          ).toFixed(2)
-        : 0;
-
-    res.json({
-      idusuario,
-      anio,
-      cumplimientoAnual: resultado,
-      YTD: `${YTD}`
-    });
-
-  } catch (error) {
-
-    console.error(error);
-
-    res.status(500).json({
-      error: "Error al calcular el cumplimiento anual 2026"
-    });
-
-  }
-},
-deleteMetas: async (req, res) => {
-  try {
-    const { id } = req.params;
-
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: "ID inválido" });
+      res.json({ message: "Meta eliminada correctamente", meta });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: "Error al eliminar la meta" });
     }
-
-    const meta = await Metas.findByIdAndDelete(id);
-
-    if (!meta) {
-      return res.status(404).json({ message: "Meta no encontrada" });
-    }
-
-    res.json({ message: "Meta eliminada correctamente", meta });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Error al eliminar la meta" });
-  }
-},
-
-
+  },
 };
 export default httpMetas;
