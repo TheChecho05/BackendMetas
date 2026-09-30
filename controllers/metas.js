@@ -255,6 +255,18 @@ const httpMetas = {
   getPromediosTodosAnio: async (req, res) => {
   try {
     const { idusuario, tipo, anio } = req.params;
+    console.log("========== DEBUG GRAFICA ==========");
+console.log("idusuario:", idusuario);
+console.log("tipo:", JSON.stringify(tipo));
+console.log("anio:", anio);
+console.log("anio convertido:", Number(anio));
+
+const metasUsuario = await Metas.find({
+  idusuario: new mongoose.Types.ObjectId(idusuario)
+}).select("tipo anio mes valor valorideal idusuario");
+
+console.log("Metas de este usuario:", metasUsuario);
+console.log("==================================");
 
     const metas = await Metas.find({
       idusuario: new mongoose.Types.ObjectId(idusuario),
