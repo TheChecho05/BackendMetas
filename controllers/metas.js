@@ -769,7 +769,8 @@ const httpMetas = {
             break;
 
           case "MANTENIMIENTOS CORRECTIVOS":
-            cumplida = meta.valor >= meta.valorideal;
+          case "CUMPLIMIENTO DE CORRECTIVOS":
+          cumplida = meta.valor >= meta.valorideal;
             break;
 
           case "Service Level in full":
