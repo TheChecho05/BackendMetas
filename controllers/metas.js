@@ -668,6 +668,7 @@ const httpMetas = {
         "HL NO PLANEADO": 10,
         "LTI's": 15,
         "MANTENIMIENTOS CORRECTIVOS": 10,
+        "CUMPLIMIENTO DE CORRECTIVOS": 10,
         "NPS 1": 15,
         "NPS 2": 5,
         "ON TIME": 20,
