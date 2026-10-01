@@ -663,9 +663,15 @@ const httpMetas = {
       });
     }
   },
-    getCumplimiento2026: async (req, res) => {
+      getCumplimiento2026: async (req, res) => {
     try {
       const { idusuario, anio } = req.params;
+
+      // MAPEO DE MESES EN TEXTO A NÚMEROS (Soluciona el problema de "Agosto")
+      const mesesMap = {
+        "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6,
+        "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12
+      };
 
       const pesos = {
         "ACIS": 15,
@@ -718,162 +724,169 @@ const httpMetas = {
       let cumplimientoMeses = Array(12).fill(0);
 
       metas.forEach(meta => {
-        const peso = pesos[meta.tipo] || 0;
+        const peso = pesos[meta.tipo.trim()] || 0;
+
+        // Convertir el mes a número (soporta "Agosto" o 8)
+        const mesNumero = typeof meta.mes === 'string' 
+          ? (mesesMap[meta.mes.trim()] || Number(meta.mes)) 
+          : Number(meta.mes);
+        
+        const indiceMes = mesNumero - 1;
+
+        // Si el mes no es válido, saltamos este registro
+        if (isNaN(indiceMes) || indiceMes < 0 || indiceMes > 11) return;
+
+        // AQUÍ ESTÁ LA CLAVE: 
+        // meta.valor = AC (Actual)
+        // meta.valorideal = BGT (Meta Ideal)
+        const actual = Number(meta.valor);
+        const ideal = Number(meta.valorideal);
+
+        if (isNaN(actual) || isNaN(ideal)) return;
 
         let cumplida = false;
 
-        switch (meta.tipo) {
+        switch (meta.tipo.trim()) {
           case "DPO":
-            // NOTA: Si DPO debe ser "igual o inferior" cambia esto a: meta.valor <= meta.valorideal
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual <= ideal; // 100 <= 99 -> Falso (Rojo)
             break;
 
           case "NPS 1":
           case "NPS 2":
-            cumplida = meta.valor >= meta.valorideal; // CORREGIDO: Mayor o igual
+            cumplida = actual >= ideal; // 71.1 >= 69.5 -> Verdadero (Verde)
             break;
 
           case "OTIF":
-            cumplida = meta.valor >= meta.valorideal; // CORREGIDO: Mayor o igual
+            cumplida = actual >= ideal; // 85.04 >= 90.63 -> Falso (Rojo)
             break;
 
           case "SCO":
-            cumplida = meta.valorideal > meta.valor;
+            cumplida = ideal > actual;
             break;
 
           case "ATCT 1":
           case "ATCT 2":
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual >= ideal;
             break;
 
           case "WNP":
-            cumplida = meta.valorideal > meta.valor;
+            cumplida = actual >= ideal; 
             break;
 
           case "HL NO PLANEADO":
-            cumplida = meta.valorideal > meta.valor;
+            cumplida = ideal > actual;
             break;
 
           case "RUTAS SIF":
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual >= ideal;
             break;
 
           case "SIF INDEX":
-            cumplida = meta.valorideal >= meta.valor;
+            cumplida = ideal >= actual;
             break;
 
           case "ACIS":
-            cumplida = meta.valorideal >= meta.valor;
+            cumplida = ideal >= actual;
             break;
 
           case "ON TIME":
-            cumplida = meta.valor <= meta.valorideal;
+            cumplida = actual <= ideal;
             break;
 
           case "ASSET EFFIENCIENCY":
-            cumplida = meta.valor <= meta.valorideal;
+            cumplida = actual <= ideal;
             break;
 
           case "ASSET UTILIZATION":
-            cumplida = meta.valor <= meta.valorideal;
+            cumplida = actual <= ideal;
             break;
 
           case "DISPONIBILIDAD DE FLOTA":
-            cumplida = meta.valorideal > meta.valor;
+            // NOTA: Si en tu Excel 95.55 (AC) vs 92 (BGT) es Verde, cambia esto a: actual >= ideal
+            cumplida = ideal > actual; 
             break;
 
           case "MANTENIMIENTOS CORRECTIVOS":
           case "CUMPLIMIENTO DE CORRECTIVOS":
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual >= ideal;
             break;
 
           case "Service Level in full":
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual >= ideal;
             break;
 
           case "TSO MAZ":
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual >= ideal;
             break;
 
           case "VLC TOTAL (P&P)":
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual >= ideal;
             break;
 
           case "VLC LS":
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual >= ideal;
             break;
 
           case "HL NO ENTREGADO":
-            cumplida = meta.valor <= meta.valorideal; // CORREGIDO: Menor o igual
+            cumplida = actual <= ideal; // 3.78 <= 4.00 -> Verdadero (Verde)
             break;
 
           case "TOTAL PRODUCTIVITY":
-            cumplida = meta.valor <= meta.valorideal;
+            cumplida = actual >= ideal; // 1.62 >= 1.83 -> Falso (Rojo)
             break;
 
           case "VLC T2":
-            cumplida = meta.valor <= meta.valorideal; // CORREGIDO: Menor o igual
+            cumplida = actual <= ideal; // 5.46 <= 5.48 -> Verdadero (Verde)
             break;
 
           case "DELIVERY EXPERIENCE":
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual >= ideal; // 6.76 >= 4.92 -> Verdadero (Verde)
             break;
 
           case "ROUTE TO MARKET":
-            cumplida = meta.valor >= meta.valorideal; // CORREGIDO: Mayor o igual
+            cumplida = actual >= ideal; // 3.49 >= 3.63 -> Falso (Rojo)
             break;
 
           case "RTM":
-            cumplida = meta.valor <= meta.valorideal;
+            cumplida = actual >= ideal;
             break;
 
           case "LTI's":
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual >= ideal;
             break;
 
           case "Total losses (Productividad)":
-            cumplida = meta.valor <= meta.valorideal;
+            cumplida = actual >= ideal; 
             break;
 
           case "TRI":
-            // NOTA: Si TRI debe ser "igual o inferior" cambia esto a: meta.valor <= meta.valorideal
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual >= ideal;
             break;
 
           case "TSO":
-            cumplida = meta.valor <= meta.valorideal;
+            cumplida = actual >= ideal; 
             break;
 
           case "SL Acido (KA)":
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual >= ideal;
             break;
 
           case "CO Logistic T2 Regional Dashboard":
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual >= ideal;
             break;
 
           default:
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = actual >= ideal;
         }
 
         if (peso > 0 && cumplida) {
-          cumplimientoMeses[meta.mes - 1] += peso;
+          cumplimientoMeses[indiceMes] += peso;
         }
       });
 
       const nombresMeses = [
-        "Enero",
-        "Febrero",
-        "Marzo",
-        "Abril",
-        "Mayo",
-        "Junio",
-        "Julio",
-        "Agosto",
-        "Septiembre",
-        "Octubre",
-        "Noviembre",
-        "Diciembre"
+        "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+        "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
       ];
 
       const resultado = cumplimientoMeses.map((valor, i) => ({
