@@ -663,7 +663,7 @@ const httpMetas = {
       });
     }
   },
-  getCumplimiento2026: async (req, res) => {
+    getCumplimiento2026: async (req, res) => {
     try {
       const { idusuario, anio } = req.params;
 
@@ -724,16 +724,17 @@ const httpMetas = {
 
         switch (meta.tipo) {
           case "DPO":
+            // NOTA: Si DPO debe ser "igual o inferior" cambia esto a: meta.valor <= meta.valorideal
             cumplida = meta.valor >= meta.valorideal;
             break;
 
           case "NPS 1":
           case "NPS 2":
-            cumplida = meta.valor <= meta.valorideal;
+            cumplida = meta.valor >= meta.valorideal; // CORREGIDO: Mayor o igual
             break;
 
           case "OTIF":
-            cumplida = meta.valor <= meta.valorideal;
+            cumplida = meta.valor >= meta.valorideal; // CORREGIDO: Mayor o igual
             break;
 
           case "SCO":
@@ -803,7 +804,7 @@ const httpMetas = {
             break;
 
           case "HL NO ENTREGADO":
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = meta.valor <= meta.valorideal; // CORREGIDO: Menor o igual
             break;
 
           case "TOTAL PRODUCTIVITY":
@@ -811,7 +812,7 @@ const httpMetas = {
             break;
 
           case "VLC T2":
-            cumplida = meta.valor >= meta.valorideal;
+            cumplida = meta.valor <= meta.valorideal; // CORREGIDO: Menor o igual
             break;
 
           case "DELIVERY EXPERIENCE":
@@ -819,7 +820,7 @@ const httpMetas = {
             break;
 
           case "ROUTE TO MARKET":
-            cumplida = meta.valor <= meta.valorideal;
+            cumplida = meta.valor >= meta.valorideal; // CORREGIDO: Mayor o igual
             break;
 
           case "RTM":
@@ -835,6 +836,7 @@ const httpMetas = {
             break;
 
           case "TRI":
+            // NOTA: Si TRI debe ser "igual o inferior" cambia esto a: meta.valor <= meta.valorideal
             cumplida = meta.valor >= meta.valorideal;
             break;
 
