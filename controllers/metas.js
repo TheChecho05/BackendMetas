@@ -663,7 +663,7 @@ const httpMetas = {
       });
     }
   },
-          getCumplimiento2026: async (req, res) => {
+            getCumplimiento2026: async (req, res) => {
     try {
       const { idusuario, anio } = req.params;
 
@@ -733,17 +733,36 @@ const httpMetas = {
         const indiceMes = mesNumero - 1;
         if (isNaN(indiceMes) || indiceMes < 0 || indiceMes > 11) return;
 
-        // ⚠️ IMPORTANTE: en la DB "valor" = BGT y "valorideal" = AC
-        const actual = Number(meta.valorideal); // AC (lo real)
-        const ideal  = Number(meta.valor);      // BGT (la meta)
+        // ✅ DB: valor = AC (real) | valorideal = BGT (meta)
+        const actual = Number(meta.valor);
+        const ideal  = Number(meta.valorideal);
 
         if (isNaN(actual) || isNaN(ideal)) return;
 
         let cumplida = false;
 
         switch (meta.tipo.trim()) {
-          // -------- MAYOR ES MEJOR (AC >= BGT) --------
+          // -------- MENOR O IGUAL ES MEJOR (AC <= BGT) --------
           case "DPO":
+          case "VLC T2":
+          case "VLC LS":
+          case "HL NO ENTREGADO":
+          case "HL NO PLANEADO":
+          case "SCO":
+          case "SCL":
+          case "ATCT":
+          case "ATCT 1":
+          case "ATCT 2":
+          case "WNP":
+          case "Total losses (Productividad)":
+          case "TOTAL LOSSES":
+          case "TRI":
+          case "ENTREGA RANGO":
+          case "TP":
+            cumplida = actual <= ideal;
+            break;
+
+          // -------- MAYOR O IGUAL ES MEJOR (AC >= BGT) --------
           case "NPS":
           case "NPS 1":
           case "NPS 2":
@@ -751,7 +770,6 @@ const httpMetas = {
           case "OTIF":
           case "DELIVERY EXPERIENCE":
           case "TOTAL PRODUCTIVITY":
-          case "TP":
           case "ROUTE TO MARKET":
           case "RTM":
           case "ON TIME":
@@ -775,24 +793,6 @@ const httpMetas = {
           case "LTI":
           case "LTI's":
             cumplida = actual >= ideal;
-            break;
-
-          // -------- MENOR ES MEJOR (AC <= BGT) --------
-          case "VLC T2":
-          case "VLC LS":
-          case "HL NO ENTREGADO":
-          case "HL NO PLANEADO":
-          case "SCO":
-          case "SCL":
-          case "ATCT":
-          case "ATCT 1":
-          case "ATCT 2":
-          case "WNP":
-          case "Total losses (Productividad)":
-          case "TOTAL LOSSES":
-          case "TRI":
-          case "ENTREGA RANGO":
-            cumplida = actual <= ideal;
             break;
 
           default:
