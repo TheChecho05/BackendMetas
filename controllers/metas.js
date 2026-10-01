@@ -663,7 +663,7 @@ const httpMetas = {
       });
     }
   },
-              getCumplimiento2026: async (req, res) => {
+                getCumplimiento2026: async (req, res) => {
     try {
       const { idusuario, anio } = req.params;
 
@@ -733,9 +733,7 @@ const httpMetas = {
         const indiceMes = mesNumero - 1;
         if (isNaN(indiceMes) || indiceMes < 0 || indiceMes > 11) return;
 
-        // ⚠️ En esta DB los campos están nombrados al revés de su semántica:
-        // meta.valor       = BGT (la meta / el objetivo)
-        // meta.valorideal  = AC  (el valor real alcanzado)
+        // DB: valor = BGT (meta) | valorideal = AC (real)
         const actual = Number(meta.valorideal); // AC
         const ideal  = Number(meta.valor);      // BGT
 
@@ -744,7 +742,8 @@ const httpMetas = {
         let cumplida = false;
 
         switch (meta.tipo.trim()) {
-          // -------- MAYOR O IGUAL ES MEJOR (AC >= BGT) --------
+          // ---- MAYOR O IGUAL ES MEJOR (AC >= BGT) ----
+          case "DPO":
           case "NPS":
           case "NPS 1":
           case "NPS 2":
@@ -757,7 +756,6 @@ const httpMetas = {
           case "ON TIME":
           case "ASSET EFFIENCIENCY":
           case "Asset Efficiency - MAZ":
-          case "ASSET UTILIZATION":
           case "Service Level in full":
           case "TSO":
           case "TSO MAZ":
@@ -777,8 +775,8 @@ const httpMetas = {
             cumplida = actual >= ideal;
             break;
 
-          // -------- MENOR O IGUAL ES MEJOR (AC <= BGT) --------
-          case "DPO":
+          // ---- MENOR O IGUAL ES MEJOR (AC <= BGT) ----
+          case "ASSET UTILIZATION":
           case "VLC T2":
           case "VLC LS":
           case "HL NO ENTREGADO":
