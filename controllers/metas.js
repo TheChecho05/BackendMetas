@@ -663,11 +663,10 @@ const httpMetas = {
       });
     }
   },
-        getCumplimiento2026: async (req, res) => {
+          getCumplimiento2026: async (req, res) => {
     try {
       const { idusuario, anio } = req.params;
 
-      // MAPEO DE MESES (Soluciona el problema de "Julio" como texto)
       const mesesMap = {
         "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6,
         "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12
@@ -701,6 +700,7 @@ const httpMetas = {
         "SL Acido (KA)": 5,
         "TOTAL PRODUCTIVITY": 10,
         "Total losses (Productividad)": 15,
+        "TOTAL LOSSES": 15,
         "TRI": 5,
         "TSO": 10,
         "TSO MAZ": 10,
@@ -726,153 +726,73 @@ const httpMetas = {
       metas.forEach(meta => {
         const peso = pesos[meta.tipo.trim()] || 0;
 
-        // Convertir el mes a número (soporta "Julio" o 7)
-        const mesNumero = typeof meta.mes === 'string' 
-          ? (mesesMap[meta.mes.trim()] || Number(meta.mes)) 
+        const mesNumero = typeof meta.mes === 'string'
+          ? (mesesMap[meta.mes.trim()] || Number(meta.mes))
           : Number(meta.mes);
-        
-        const indiceMes = mesNumero - 1;
 
+        const indiceMes = mesNumero - 1;
         if (isNaN(indiceMes) || indiceMes < 0 || indiceMes > 11) return;
 
-        // Convertir a números por seguridad
-        const actual = Number(meta.valor);     // AC
-        const ideal = Number(meta.valorideal); // BGT
+        // ⚠️ IMPORTANTE: en la DB "valor" = BGT y "valorideal" = AC
+        const actual = Number(meta.valorideal); // AC (lo real)
+        const ideal  = Number(meta.valor);      // BGT (la meta)
 
         if (isNaN(actual) || isNaN(ideal)) return;
 
         let cumplida = false;
 
         switch (meta.tipo.trim()) {
-          // --- INDICADORES DE DANIEL (JULIO Y AGOSTO) ---
+          // -------- MAYOR ES MEJOR (AC >= BGT) --------
           case "DPO":
-            cumplida = actual <= ideal; // 100 <= 99 -> Falso (Rojo)
-            break;
-
+          case "NPS":
           case "NPS 1":
           case "NPS 2":
-            cumplida = actual >= ideal; // 74.8 >= 69.5 -> Verdadero (Verde)
-            break;
-
+          case "NPS DB":
           case "OTIF":
-            cumplida = actual >= ideal; // 79.24 >= 90.6 -> Falso (Rojo)
-            break;
-
           case "DELIVERY EXPERIENCE":
-            cumplida = actual >= ideal; // 10.19 >= 4.92 -> Verdadero (Verde) ¡Revisa esto!
-            break;
-
-          case "VLC T2":
-            cumplida = actual <= ideal; // 4.85 <= 5.23 -> Verdadero (Verde)
-            break;
-
-          case "HL NO ENTREGADO":
-            cumplida = actual <= ideal; // 2.75 <= 4.00 -> Verdadero (Verde)
-            break;
-
           case "TOTAL PRODUCTIVITY":
-            // OJO: Aunque el Excel lo pinta verde, la fórmula del Excel NO lo cuenta.
-            // Para que dé 55% en Julio y 50% en Agosto, debe ser >= (1.85 >= 1.92 -> Falso/Rojo)
-            cumplida = actual >= ideal; 
-            break;
-
+          case "TP":
           case "ROUTE TO MARKET":
-            cumplida = actual >= ideal; // 2.72 >= 2.33 -> Verdadero (Verde)
-            break;
-
-          // --- OTROS INDICADORES ---
-          case "SCO":
-            cumplida = ideal > actual;
-            break;
-
-          case "ATCT 1":
-          case "ATCT 2":
-            cumplida = actual >= ideal;
-            break;
-
-          case "WNP":
-            cumplida = actual >= ideal; 
-            break;
-
-          case "HL NO PLANEADO":
-            cumplida = ideal > actual;
-            break;
-
-          case "RUTAS SIF":
-            cumplida = actual >= ideal;
-            break;
-
-          case "SIF INDEX":
-            cumplida = ideal >= actual;
-            break;
-
-          case "ACIS":
-            cumplida = ideal >= actual;
-            break;
-
-          case "ON TIME":
-            cumplida = actual <= ideal;
-            break;
-
-          case "ASSET EFFIENCIENCY":
-            cumplida = actual <= ideal;
-            break;
-
-          case "ASSET UTILIZATION":
-            cumplida = actual <= ideal;
-            break;
-
-          case "DISPONIBILIDAD DE FLOTA":
-            cumplida = ideal > actual; 
-            break;
-
-          case "MANTENIMIENTOS CORRECTIVOS":
-          case "CUMPLIMIENTO DE CORRECTIVOS":
-            cumplida = actual >= ideal;
-            break;
-
-          case "Service Level in full":
-            cumplida = actual >= ideal;
-            break;
-
-          case "TSO MAZ":
-            cumplida = actual >= ideal;
-            break;
-
-          case "VLC TOTAL (P&P)":
-            cumplida = actual >= ideal;
-            break;
-
-          case "VLC LS":
-            cumplida = actual >= ideal;
-            break;
-
           case "RTM":
-            cumplida = actual >= ideal;
-            break;
-
+          case "ON TIME":
+          case "ASSET EFFIENCIENCY":
+          case "Asset Efficiency - MAZ":
+          case "ASSET UTILIZATION":
+          case "Service Level in full":
+          case "TSO":
+          case "TSO MAZ":
+          case "VLC TOTAL (P&P)":
+          case "RUTAS SIF":
+          case "SIF INDEX":
+          case "ACIS":
+          case "CUMPLIMIENTO DE CORRECTIVOS":
+          case "MANTENIMIENTOS CORRECTIVOS":
+          case "DISPONIBILIDAD DE FLOTA":
+          case "SL Acido (KA)":
+          case "CO Logistic T2 Regional Dashboard":
+          case "Modelos de Distribucion":
+          case "CONTROL POLICIES":
+          case "LTI":
           case "LTI's":
             cumplida = actual >= ideal;
             break;
 
+          // -------- MENOR ES MEJOR (AC <= BGT) --------
+          case "VLC T2":
+          case "VLC LS":
+          case "HL NO ENTREGADO":
+          case "HL NO PLANEADO":
+          case "SCO":
+          case "SCL":
+          case "ATCT":
+          case "ATCT 1":
+          case "ATCT 2":
+          case "WNP":
           case "Total losses (Productividad)":
-            cumplida = actual >= ideal; 
-            break;
-
+          case "TOTAL LOSSES":
           case "TRI":
-            cumplida = actual >= ideal;
-            break;
-
-          case "TSO":
-            cumplida = actual >= ideal; 
-            break;
-
-          case "SL Acido (KA)":
-            cumplida = actual >= ideal;
-            break;
-
-          case "CO Logistic T2 Regional Dashboard":
-            cumplida = actual >= ideal;
+          case "ENTREGA RANGO":
+            cumplida = actual <= ideal;
             break;
 
           default:
@@ -895,14 +815,9 @@ const httpMetas = {
       }));
 
       const mesesConDatos = cumplimientoMeses.filter(v => v > 0);
-
-      const YTD =
-        mesesConDatos.length > 0
-          ? (
-              mesesConDatos.reduce((a, b) => a + b, 0) /
-              mesesConDatos.length
-            ).toFixed(2)
-          : 0;
+      const YTD = mesesConDatos.length > 0
+        ? (mesesConDatos.reduce((a, b) => a + b, 0) / mesesConDatos.length).toFixed(2)
+        : 0;
 
       res.json({
         idusuario,
