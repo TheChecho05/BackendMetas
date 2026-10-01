@@ -663,11 +663,11 @@ const httpMetas = {
       });
     }
   },
-      getCumplimiento2026: async (req, res) => {
+        getCumplimiento2026: async (req, res) => {
     try {
       const { idusuario, anio } = req.params;
 
-      // MAPEO DE MESES EN TEXTO A NÚMEROS (Soluciona el problema de "Agosto")
+      // MAPEO DE MESES (Soluciona el problema de "Julio" como texto)
       const mesesMap = {
         "Enero": 1, "Febrero": 2, "Marzo": 3, "Abril": 4, "Mayo": 5, "Junio": 6,
         "Julio": 7, "Agosto": 8, "Septiembre": 9, "Octubre": 10, "Noviembre": 11, "Diciembre": 12
@@ -726,40 +726,61 @@ const httpMetas = {
       metas.forEach(meta => {
         const peso = pesos[meta.tipo.trim()] || 0;
 
-        // Convertir el mes a número (soporta "Agosto" o 8)
+        // Convertir el mes a número (soporta "Julio" o 7)
         const mesNumero = typeof meta.mes === 'string' 
           ? (mesesMap[meta.mes.trim()] || Number(meta.mes)) 
           : Number(meta.mes);
         
         const indiceMes = mesNumero - 1;
 
-        // Si el mes no es válido, saltamos este registro
         if (isNaN(indiceMes) || indiceMes < 0 || indiceMes > 11) return;
 
-        // AQUÍ ESTÁ LA CLAVE: 
-        // meta.valor = AC (Actual)
-        // meta.valorideal = BGT (Meta Ideal)
-        const actual = Number(meta.valor);
-        const ideal = Number(meta.valorideal);
+        // Convertir a números por seguridad
+        const actual = Number(meta.valor);     // AC
+        const ideal = Number(meta.valorideal); // BGT
 
         if (isNaN(actual) || isNaN(ideal)) return;
 
         let cumplida = false;
 
         switch (meta.tipo.trim()) {
+          // --- INDICADORES DE DANIEL (JULIO Y AGOSTO) ---
           case "DPO":
             cumplida = actual <= ideal; // 100 <= 99 -> Falso (Rojo)
             break;
 
           case "NPS 1":
           case "NPS 2":
-            cumplida = actual >= ideal; // 71.1 >= 69.5 -> Verdadero (Verde)
+            cumplida = actual >= ideal; // 74.8 >= 69.5 -> Verdadero (Verde)
             break;
 
           case "OTIF":
-            cumplida = actual >= ideal; // 85.04 >= 90.63 -> Falso (Rojo)
+            cumplida = actual >= ideal; // 79.24 >= 90.6 -> Falso (Rojo)
             break;
 
+          case "DELIVERY EXPERIENCE":
+            cumplida = actual >= ideal; // 10.19 >= 4.92 -> Verdadero (Verde) ¡Revisa esto!
+            break;
+
+          case "VLC T2":
+            cumplida = actual <= ideal; // 4.85 <= 5.23 -> Verdadero (Verde)
+            break;
+
+          case "HL NO ENTREGADO":
+            cumplida = actual <= ideal; // 2.75 <= 4.00 -> Verdadero (Verde)
+            break;
+
+          case "TOTAL PRODUCTIVITY":
+            // OJO: Aunque el Excel lo pinta verde, la fórmula del Excel NO lo cuenta.
+            // Para que dé 55% en Julio y 50% en Agosto, debe ser >= (1.85 >= 1.92 -> Falso/Rojo)
+            cumplida = actual >= ideal; 
+            break;
+
+          case "ROUTE TO MARKET":
+            cumplida = actual >= ideal; // 2.72 >= 2.33 -> Verdadero (Verde)
+            break;
+
+          // --- OTROS INDICADORES ---
           case "SCO":
             cumplida = ideal > actual;
             break;
@@ -802,7 +823,6 @@ const httpMetas = {
             break;
 
           case "DISPONIBILIDAD DE FLOTA":
-            // NOTA: Si en tu Excel 95.55 (AC) vs 92 (BGT) es Verde, cambia esto a: actual >= ideal
             cumplida = ideal > actual; 
             break;
 
@@ -825,26 +845,6 @@ const httpMetas = {
 
           case "VLC LS":
             cumplida = actual >= ideal;
-            break;
-
-          case "HL NO ENTREGADO":
-            cumplida = actual <= ideal; // 3.78 <= 4.00 -> Verdadero (Verde)
-            break;
-
-          case "TOTAL PRODUCTIVITY":
-            cumplida = actual >= ideal; // 1.62 >= 1.83 -> Falso (Rojo)
-            break;
-
-          case "VLC T2":
-            cumplida = actual <= ideal; // 5.46 <= 5.48 -> Verdadero (Verde)
-            break;
-
-          case "DELIVERY EXPERIENCE":
-            cumplida = actual >= ideal; // 6.76 >= 4.92 -> Verdadero (Verde)
-            break;
-
-          case "ROUTE TO MARKET":
-            cumplida = actual >= ideal; // 3.49 >= 3.63 -> Falso (Rojo)
             break;
 
           case "RTM":
