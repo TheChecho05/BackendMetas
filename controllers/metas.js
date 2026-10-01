@@ -663,7 +663,7 @@ const httpMetas = {
       });
     }
   },
-                getCumplimiento2026: async (req, res) => {
+                  getCumplimiento2026: async (req, res) => {
     try {
       const { idusuario, anio } = req.params;
 
@@ -756,6 +756,7 @@ const httpMetas = {
           case "ON TIME":
           case "ASSET EFFIENCIENCY":
           case "Asset Efficiency - MAZ":
+          case "ASSET UTILIZATION":      // ← MOVIDO AQUÍ
           case "Service Level in full":
           case "TSO":
           case "TSO MAZ":
@@ -776,7 +777,6 @@ const httpMetas = {
             break;
 
           // ---- MENOR O IGUAL ES MEJOR (AC <= BGT) ----
-          case "ASSET UTILIZATION":
           case "VLC T2":
           case "VLC LS":
           case "HL NO ENTREGADO":
