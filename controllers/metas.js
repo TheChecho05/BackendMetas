@@ -663,7 +663,7 @@ const httpMetas = {
       });
     }
   },
-            getCumplimiento2026: async (req, res) => {
+              getCumplimiento2026: async (req, res) => {
     try {
       const { idusuario, anio } = req.params;
 
@@ -733,35 +733,17 @@ const httpMetas = {
         const indiceMes = mesNumero - 1;
         if (isNaN(indiceMes) || indiceMes < 0 || indiceMes > 11) return;
 
-        // ✅ DB: valor = AC (real) | valorideal = BGT (meta)
-        const actual = Number(meta.valor);
-        const ideal  = Number(meta.valorideal);
+        // ⚠️ En esta DB los campos están nombrados al revés de su semántica:
+        // meta.valor       = BGT (la meta / el objetivo)
+        // meta.valorideal  = AC  (el valor real alcanzado)
+        const actual = Number(meta.valorideal); // AC
+        const ideal  = Number(meta.valor);      // BGT
 
         if (isNaN(actual) || isNaN(ideal)) return;
 
         let cumplida = false;
 
         switch (meta.tipo.trim()) {
-          // -------- MENOR O IGUAL ES MEJOR (AC <= BGT) --------
-          case "DPO":
-          case "VLC T2":
-          case "VLC LS":
-          case "HL NO ENTREGADO":
-          case "HL NO PLANEADO":
-          case "SCO":
-          case "SCL":
-          case "ATCT":
-          case "ATCT 1":
-          case "ATCT 2":
-          case "WNP":
-          case "Total losses (Productividad)":
-          case "TOTAL LOSSES":
-          case "TRI":
-          case "ENTREGA RANGO":
-          case "TP":
-            cumplida = actual <= ideal;
-            break;
-
           // -------- MAYOR O IGUAL ES MEJOR (AC >= BGT) --------
           case "NPS":
           case "NPS 1":
@@ -793,6 +775,26 @@ const httpMetas = {
           case "LTI":
           case "LTI's":
             cumplida = actual >= ideal;
+            break;
+
+          // -------- MENOR O IGUAL ES MEJOR (AC <= BGT) --------
+          case "DPO":
+          case "VLC T2":
+          case "VLC LS":
+          case "HL NO ENTREGADO":
+          case "HL NO PLANEADO":
+          case "SCO":
+          case "SCL":
+          case "ATCT":
+          case "ATCT 1":
+          case "ATCT 2":
+          case "WNP":
+          case "Total losses (Productividad)":
+          case "TOTAL LOSSES":
+          case "TRI":
+          case "ENTREGA RANGO":
+          case "TP":
+            cumplida = actual <= ideal;
             break;
 
           default:
